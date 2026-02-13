@@ -473,18 +473,18 @@
                 
                 <div class="input-group">
                     <label for="userName">Your Name</label>
-                    <input type="text" id="userName" placeholder="Enter your full name">
+                    <input type="text" id="userName" placeholder="Enter your full name" required>
                 </div>
 
                 <div class="input-group">
                     <label>Are you in a management role?</label>
                     <div class="radio-group">
                         <div class="radio-option">
-                            <input type="radio" id="mgmtYes" name="management" value="yes">
+                            <input type="radio" id="mgmtYes" name="management" value="yes" required>
                             <label for="mgmtYes">Yes</label>
                         </div>
                         <div class="radio-option">
-                            <input type="radio" id="mgmtNo" name="management" value="no">
+                            <input type="radio" id="mgmtNo" name="management" value="no" required>
                             <label for="mgmtNo">No</label>
                         </div>
                     </div>
@@ -939,11 +939,13 @@
             const checkboxes = document.querySelectorAll('.answer-options input[type="checkbox"]');
             const selected = [...checkboxes].filter(cb => cb.checked).map(cb => cb.value);
             
-            currentAnswer = selected.join('|');
-            
-            // Check if correct
+            // Sort both for comparison
             const sortedSelected = [...selected].sort().join('|');
             const sortedCorrect = [...correctAnswers].sort().join('|');
+            
+            currentAnswer = sortedSelected;  // Store sorted version
+            
+            // Check if correct
             const isCorrect = sortedSelected === sortedCorrect;
 
             // Visual feedback
@@ -963,7 +965,7 @@
                 cb.disabled = true;
             });
 
-            checkAnswer(currentAnswer, correctAnswers.join('|'));
+            checkAnswer(sortedSelected, sortedCorrect);  // Pass sorted versions
         }
 
         // ==========================================
@@ -1121,11 +1123,11 @@
                 const resultRecord = {
                     fields: {
                         Name: userName,
-                        Management: isManagement ? "Yes" : "No",  // Send text instead of boolean
+                        Management: isManagement,  // Boolean for checkbox
                         Date: new Date().toISOString(),
                         Score: percentage,
                         TotalQuestions: questions.length,
-                        Passed: percentage === 100 ? "Yes" : "No"  // Send text instead of boolean
+                        Passed: percentage === 100  // Boolean for checkbox
                     }
                 };
 
@@ -1137,7 +1139,7 @@
                     resultRecord.fields[`Q${qNum}_Type`] = answer.questionType;
                     resultRecord.fields[`Q${qNum}_UserAnswer`] = answer.userAnswer;
                     resultRecord.fields[`Q${qNum}_CorrectAnswer`] = answer.correctAnswer;
-                    resultRecord.fields[`Q${qNum}_Correct`] = answer.isCorrect ? "Yes" : "No";  // Send text instead of boolean
+                    resultRecord.fields[`Q${qNum}_Correct`] = answer.isCorrect;  // Boolean for checkbox
                 });
 
                 // Submit to Airtable API
