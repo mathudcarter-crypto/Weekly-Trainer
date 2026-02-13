@@ -507,7 +507,7 @@
             apiKey: 'patAWD7HJ62aebmsy.a867977bb2850fa1f585108cc83e7b9a9c8fc548aac9b2e47a5c7dcdba0d5b43',
             baseId: 'appJx7uXgavKhl1rF',
             questionsTable: 'Questions',
-            formId: 'shrlemAo8WPIQi4NG'
+            resultsTable: 'Results'
         };
 
         // ==========================================
@@ -1080,47 +1080,56 @@
         }
 
         // ==========================================
-        // SAVE RESULTS TO AIRTABLE FORM
+        // SAVE RESULTS TO AIRTABLE API
         // ==========================================
         async function saveResults(percentage) {
             try {
                 document.getElementById('submissionStatus').classList.remove('hidden');
 
-                const formData = new FormData();
-                
-                // Add basic info
-                formData.append('Name', userName);
-                formData.append('Management', isManagement ? 'checked' : '');
-                formData.append('Date', new Date().toISOString());
-                formData.append('Score', percentage);
-                formData.append('TotalQuestions', questions.length);
-                formData.append('Passed', percentage === 100 ? 'checked' : '');
+                // Prepare the result record
+                const resultRecord = {
+                    fields: {
+                        Name: userName,
+                        Management: isManagement,
+                        Date: new Date().toISOString(),
+                        Score: percentage,
+                        TotalQuestions: questions.length,
+                        Passed: percentage === 100
+                    }
+                };
 
                 // Add question details
                 userAnswers.forEach((answer, index) => {
                     const qNum = index + 1;
-                    formData.append(`Q${qNum}_Question`, answer.question);
-                    formData.append(`Q${qNum}_Category`, answer.category);
-                    formData.append(`Q${qNum}_Type`, answer.questionType);
-                    formData.append(`Q${qNum}_UserAnswer`, answer.userAnswer);
-                    formData.append(`Q${qNum}_CorrectAnswer`, answer.correctAnswer);
-                    formData.append(`Q${qNum}_Correct`, answer.isCorrect ? 'checked' : '');
+                    resultRecord.fields[`Q${qNum}_Question`] = answer.question;
+                    resultRecord.fields[`Q${qNum}_Category`] = answer.category;
+                    resultRecord.fields[`Q${qNum}_Type`] = answer.questionType;
+                    resultRecord.fields[`Q${qNum}_UserAnswer`] = answer.userAnswer;
+                    resultRecord.fields[`Q${qNum}_CorrectAnswer`] = answer.correctAnswer;
+                    resultRecord.fields[`Q${qNum}_Correct`] = answer.isCorrect;
                 });
 
-                // Submit to Airtable form
-                const formUrl = `https://airtable.com/${CONFIG.baseId}/${CONFIG.formId}`;
-                
-                await fetch(formUrl, {
+                // Submit to Airtable API
+                const url = `https://api.airtable.com/v0/${CONFIG.baseId}/Results`;
+                const response = await fetch(url, {
                     method: 'POST',
-                    body: formData,
-                    mode: 'no-cors' // Airtable forms don't support CORS
+                    headers: {
+                        'Authorization': `Bearer ${CONFIG.apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ records: [resultRecord] })
                 });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || 'Failed to save results');
+                }
 
                 document.getElementById('submissionStatus').classList.add('hidden');
             } catch (error) {
                 console.error('Failed to save results:', error);
                 document.getElementById('submissionStatus').innerHTML = 
-                    '<p style="color: #991b1b;">Results could not be saved automatically. Please contact your administrator.</p>';
+                    `<p style="color: #991b1b;">Results saved to your device but could not sync to server: ${error.message}</p>`;
             }
         }
 
