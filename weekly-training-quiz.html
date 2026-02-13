@@ -474,9 +474,10 @@
         // CONFIGURATION
         // ==========================================
         const CONFIG = {
-            sharedViewId: 'shr4p95gyOtPXpgGu',
-            formId: 'shrlemAo8WPIQi4NG',
-            baseId: 'appJx7uXgavKhl1rF'
+            apiKey: 'patAWD7HJ62aebmsy.a867977bb2850fa1f585108cc83e7b9a9c8fc548aac9b2e47a5c7dcdba0d5b43',
+            baseId: 'appJx7uXgavKhl1rF',
+            questionsTable: 'Questions',
+            formId: 'shrlemAo8WPIQi4NG'
         };
 
         // ==========================================
@@ -533,14 +534,19 @@
         });
 
         // ==========================================
-        // LOAD QUESTIONS FROM SHARED VIEW
+        // LOAD QUESTIONS FROM AIRTABLE API
         // ==========================================
         async function loadQuestions() {
             try {
                 showError('Loading questions...');
                 
-                const url = `https://airtable.com/v0.3/view/${CONFIG.sharedViewId}/readData`;
-                const response = await fetch(url);
+                // Use Airtable API with token
+                const url = `https://api.airtable.com/v0/${CONFIG.baseId}/${CONFIG.questionsTable}?filterByFormula=Flagged=TRUE()`;
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${CONFIG.apiKey}`
+                    }
+                });
                 
                 if (!response.ok) {
                     throw new Error('Failed to load questions');
@@ -548,43 +554,17 @@
 
                 const data = await response.json();
                 
-                // Parse questions from shared view
-                const allQuestions = data.data.rows.map(row => {
-                    const cells = row.cellValuesByColumnId;
+                // Parse questions from Airtable API response
+                const allQuestions = data.records.map(record => {
+                    const fields = record.fields;
                     return {
-                        question: Object.values(cells).find(cell => typeof cell === 'string' && cell.length > 50) || '',
-                        category: Object.values(cells).find(cell => ['Product Knowledge', 'Policy/Procedure', 'Management'].includes(cell)) || '',
-                        questionType: Object.values(cells).find(cell => ['Multiple Choice', 'True/False', 'Ranking', 'Multiple Select', 'Fill-in-Blank'].includes(cell)) || '',
-                        correctAnswer: '',
-                        wrongAnswers: '',
-                        image: null,
-                        rawCells: cells
+                        question: fields.Question || '',
+                        category: fields.Category || '',
+                        questionType: fields.QuestionType || '',
+                        correctAnswer: fields.CorrectAnswer || '',
+                        wrongAnswers: fields.WrongAnswers || '',
+                        image: fields.Image && fields.Image.length > 0 ? fields.Image[0].url : null
                     };
-                }).map(q => {
-                    // Extract correct and wrong answers from remaining cells
-                    const usedValues = [q.question, q.category, q.questionType];
-                    const remainingCells = Object.values(q.rawCells).filter(cell => 
-                        !usedValues.includes(cell) && 
-                        typeof cell === 'string' && 
-                        cell.length > 0
-                    );
-                    
-                    if (remainingCells.length >= 1) {
-                        q.correctAnswer = remainingCells[0];
-                    }
-                    if (remainingCells.length >= 2) {
-                        q.wrongAnswers = remainingCells[1];
-                    }
-                    
-                    // Check for image attachment
-                    const imageCell = Object.values(q.rawCells).find(cell => 
-                        Array.isArray(cell) && cell.length > 0 && cell[0].url
-                    );
-                    if (imageCell) {
-                        q.image = imageCell[0].url;
-                    }
-                    
-                    return q;
                 });
 
                 // Filter questions based on management status
