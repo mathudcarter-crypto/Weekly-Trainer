@@ -264,6 +264,9 @@
             display: flex;
             align-items: center;
             gap: 15px;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
         }
 
         .ranking-item:hover {
@@ -271,13 +274,26 @@
             background: #f0f7fc;
         }
 
+        .ranking-item:active {
+            border-color: #9BB8D3;
+            background: #f0f7fc;
+            transform: scale(1.02);
+        }
+
         .ranking-item.dragging {
-            opacity: 0.5;
+            opacity: 0.7;
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         }
 
         .drag-handle {
             font-size: 1.5em;
             color: #999;
+            cursor: grab;
+        }
+
+        .ranking-item:active .drag-handle {
+            cursor: grabbing;
         }
 
         .ranking-item.correct {
@@ -720,7 +736,7 @@
         }
 
         // ==========================================
-        // RENDER: RANKING
+        // RENDER: RANKING (with Touch Support)
         // ==========================================
         function renderRanking(question, container) {
             const correctOrder = question.correctAnswer.split('|').map(s => s.trim());
@@ -737,10 +753,16 @@
                 div.dataset.item = item;
                 div.innerHTML = `<span class="drag-handle">☰</span> ${item}`;
                 
+                // Desktop drag events
                 div.addEventListener('dragstart', handleDragStart);
                 div.addEventListener('dragover', handleDragOver);
                 div.addEventListener('drop', handleDrop);
                 div.addEventListener('dragend', handleDragEnd);
+                
+                // Mobile touch events
+                div.addEventListener('touchstart', handleTouchStart, {passive: false});
+                div.addEventListener('touchmove', handleTouchMove, {passive: false});
+                div.addEventListener('touchend', handleTouchEnd);
                 
                 rankingDiv.appendChild(div);
             });
@@ -756,7 +778,10 @@
         }
 
         let draggedElement = null;
+        let touchedElement = null;
+        let touchStartY = 0;
 
+        // Desktop drag handlers
         function handleDragStart(e) {
             draggedElement = e.target;
             e.target.classList.add('dragging');
@@ -784,6 +809,53 @@
 
         function handleDragEnd(e) {
             e.target.classList.remove('dragging');
+        }
+
+        // Mobile touch handlers
+        function handleTouchStart(e) {
+            e.preventDefault();
+            touchedElement = e.currentTarget;
+            touchStartY = e.touches[0].clientY;
+            touchedElement.classList.add('dragging');
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (!touchedElement) return;
+
+            const touch = e.touches[0];
+            const container = document.getElementById('rankingContainer');
+            const items = [...container.children];
+            
+            // Find which item is under the touch point
+            let targetElement = null;
+            for (let item of items) {
+                if (item === touchedElement) continue;
+                const rect = item.getBoundingClientRect();
+                if (touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+                    targetElement = item;
+                    break;
+                }
+            }
+
+            // Reorder if we found a target
+            if (targetElement) {
+                const touchedIndex = items.indexOf(touchedElement);
+                const targetIndex = items.indexOf(targetElement);
+
+                if (touchedIndex < targetIndex) {
+                    container.insertBefore(touchedElement, targetElement.nextSibling);
+                } else {
+                    container.insertBefore(touchedElement, targetElement);
+                }
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (touchedElement) {
+                touchedElement.classList.remove('dragging');
+                touchedElement = null;
+            }
         }
 
         function submitRanking(correctOrder) {
