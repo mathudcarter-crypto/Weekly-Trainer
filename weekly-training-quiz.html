@@ -357,6 +357,28 @@
             color: #374151;
         }
 
+        .question-notes {
+            margin-top: 15px;
+            padding: 15px;
+            background: #e0f2fe;
+            border-left: 4px solid #0284c7;
+            border-radius: 8px;
+            color: #0c4a6e;
+            font-weight: normal;
+            font-size: 0.95em;
+        }
+
+        .notes-label {
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #075985;
+        }
+
+        .notes-content {
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
         .results-screen {
             display: none;
             text-align: center;
@@ -593,7 +615,8 @@
                         questionType: fields.QuestionType || '',
                         correctAnswer: fields.CorrectAnswer || '',
                         wrongAnswers: fields.WrongAnswers || '',
-                        image: fields.Image && fields.Image.length > 0 ? fields.Image[0].url : null
+                        image: fields.Image && fields.Image.length > 0 ? fields.Image[0].url : null,
+                        notes: fields.QuestionNotes || ''
                     };
                 });
 
@@ -1025,6 +1048,14 @@
                 feedback.innerHTML = `✗ Incorrect.<div class="correct-answer-display">The correct answer is: <strong>${correctAnswer}</strong></div>`;
             }
 
+            // Add notes if they exist
+            if (question.notes && question.notes.trim() !== '') {
+                const notesDiv = document.createElement('div');
+                notesDiv.className = 'question-notes';
+                notesDiv.innerHTML = `<div class="notes-label">📝 Note:</div><div class="notes-content">${question.notes}</div>`;
+                feedback.appendChild(notesDiv);
+            }
+
             // Store answer
             userAnswers.push({
                 question: question.question,
@@ -1090,11 +1121,11 @@
                 const resultRecord = {
                     fields: {
                         Name: userName,
-                        Management: isManagement,
+                        Management: isManagement ? "Yes" : "No",  // Send text instead of boolean
                         Date: new Date().toISOString(),
                         Score: percentage,
                         TotalQuestions: questions.length,
-                        Passed: percentage === 100
+                        Passed: percentage === 100 ? "Yes" : "No"  // Send text instead of boolean
                     }
                 };
 
@@ -1106,7 +1137,7 @@
                     resultRecord.fields[`Q${qNum}_Type`] = answer.questionType;
                     resultRecord.fields[`Q${qNum}_UserAnswer`] = answer.userAnswer;
                     resultRecord.fields[`Q${qNum}_CorrectAnswer`] = answer.correctAnswer;
-                    resultRecord.fields[`Q${qNum}_Correct`] = answer.isCorrect;
+                    resultRecord.fields[`Q${qNum}_Correct`] = answer.isCorrect ? "Yes" : "No";  // Send text instead of boolean
                 });
 
                 // Submit to Airtable API
