@@ -87,6 +87,7 @@
         .input-group {
             margin-bottom: 25px;
             text-align: left;
+            position: relative;
         }
 
         .input-group label {
@@ -104,9 +105,64 @@
             font-size: 1em;
         }
 
-        .input-group input:focus {
+        .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            background: white;
+            cursor: pointer;
+        }
+
+        /* Searchable store dropdown */
+        .store-dropdown {
+            position: absolute;
+            width: 100%;
+            max-height: 250px;
+            overflow-y: auto;
+            background: white;
+            border: 2px solid #9BB8D3;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            margin-top: 4px;
+        }
+
+        .store-dropdown-item {
+            padding: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s ease;
+        }
+
+        .store-dropdown-item:hover {
+            background: #f0f7fc;
+        }
+
+        .store-dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .store-dropdown.hidden {
+            display: none;
+        }
+
+        .store-dropdown-empty {
+            padding: 12px;
+            color: #999;
+            text-align: center;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
             outline: none;
             border-color: #9BB8D3;
+        }
+
+        .input-group input.store-selected {
+            border-color: #10b981;
+            background: #d1fae5;
         }
 
         .radio-group {
@@ -640,6 +696,17 @@
                 </div>
 
                 <div class="input-group">
+                    <label for="storeSearch">Your Store *</label>
+                    <input type="text" 
+                           id="storeSearch" 
+                           placeholder="Type store number or name..."
+                           autocomplete="off"
+                           required>
+                    <input type="hidden" id="storeName" required>
+                    <div id="storeDropdown" class="store-dropdown hidden"></div>
+                </div>
+
+                <div class="input-group">
                     <label>Are you in a management role?</label>
                     <div class="radio-group">
                         <div class="radio-option">
@@ -715,6 +782,8 @@
         // STATE
         // ==========================================
         let userName = '';
+        let userStore = '';
+        let userStoreRecordId = '';
         let isManagement = false;
         let questions = [];
         let currentQuestionIndex = 0;
@@ -739,6 +808,7 @@
             if (savedName) {
                 document.getElementById('userName').value = savedName;
             }
+            loadStores();  // Load store list from Airtable
         });
 
         // ==========================================
@@ -746,10 +816,17 @@
         // ==========================================
         document.getElementById('startBtn').addEventListener('click', async () => {
             userName = document.getElementById('userName').value.trim();
+            const storeHiddenInput = document.getElementById('storeName');
+            const storeSearchInput = document.getElementById('storeSearch');
             const mgmtRadio = document.querySelector('input[name="management"]:checked');
 
             if (!userName) {
                 showError('Please enter your name');
+                return;
+            }
+
+            if (!storeHiddenInput.value) {
+                showError('Please select your store from the list');
                 return;
             }
 
@@ -758,12 +835,219 @@
                 return;
             }
 
+            // Get store info from hidden input and search input
+            userStore = storeSearchInput.value;
+            userStoreRecordId = storeHiddenInput.value;
+
             isManagement = mgmtRadio.value === 'yes';
             localStorage.setItem('userName', userName);
 
             hideError();
             await loadQuestions();
         });
+
+        // ==========================================
+        // LOAD STORES FROM AIRTABLE API
+        // ==========================================
+        let allStores = [];  // Global store list
+
+        async function loadStores() {
+            try {
+                let allRecords = [];
+                let offset = null;
+                
+                // Fetch all records with pagination
+                do {
+                    let url = `https://api.airtable.com/v0/${CONFIG.baseId}/Yard List`;
+                    if (offset) {
+                        url += `?offset=${offset}`;
+                    }
+                    
+                    const response = await fetch(url, {
+                        headers: {
+                            'Authorization': `Bearer ${CONFIG.apiKey}`
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        console.error('Failed to load stores');
+                        return;
+                    }
+
+                    const data = await response.json();
+                    allRecords = allRecords.concat(data.records);
+                    offset = data.offset;  // Will be undefined when no more records
+                    
+                    console.log(`Fetched ${data.records.length} stores, offset: ${offset}`);
+                } while (offset);
+                
+                console.log(`Total records fetched: ${allRecords.length}`);
+                console.log('Raw Airtable data:', allRecords);
+                
+                // Parse and sort stores by city name
+                allStores = allRecords
+                    .map((record, index) => {
+                        const pcName = (record.fields['PC Name'] || '').trim();
+                        const pc = (record.fields['PC'] || '').toString().trim();
+                        const displayName = pcName || pc || 'Unknown Store';
+                        const searchText = `${pc} ${pcName}`.toLowerCase().trim();
+                        
+                        // Extract city name (everything after the first word/number)
+                        // Example: "5745 Benton" -> city = "Benton"
+                        // Example: "5775 Fort Smith" -> city = "Fort Smith"
+                        const parts = displayName.split(' ');
+                        const city = parts.length > 1 ? parts.slice(1).join(' ') : displayName;
+                        
+                        const store = {
+                            id: record.id,
+                            name: displayName,
+                            pc: pc,
+                            pcName: pcName,
+                            city: city,
+                            searchText: searchText
+                        };
+                        
+                        // Debug: Log each store
+                        if (index < 20 || displayName.includes('Fort Smith')) {  // Log first 20 and Fort Smith
+                            console.log(`Store ${index + 1}:`, {
+                                name: store.name,
+                                city: store.city,
+                                pc: store.pc,
+                                searchText: store.searchText
+                            });
+                        }
+                        
+                        return store;
+                    })
+                    .filter(store => {
+                        const keep = store.name !== 'Unknown Store';
+                        if (!keep) {
+                            console.log('Filtered out:', store);
+                        }
+                        return keep;
+                    })
+                    .sort((a, b) => a.city.localeCompare(b.city));  // Sort by city name
+                
+                console.log(`Total stores loaded: ${allStores.length}`);
+                console.log('Stores sorted by city:', allStores.map(s => `${s.city} (${s.pc})`).slice(0, 20));
+                
+                // Set up search input event listeners
+                setupStoreSearch();
+                
+            } catch (error) {
+                console.error('Error loading stores:', error);
+            }
+        }
+
+        function setupStoreSearch() {
+            const searchInput = document.getElementById('storeSearch');
+            const dropdown = document.getElementById('storeDropdown');
+            const hiddenInput = document.getElementById('storeName');
+
+            // Show all stores on focus
+            searchInput.addEventListener('focus', () => {
+                if (searchInput.value === '') {
+                    showAllStores();
+                }
+            });
+
+            // Filter as user types
+            searchInput.addEventListener('input', () => {
+                const query = searchInput.value.toLowerCase().trim();
+                
+                // Clear the hidden input when user types (force them to select from dropdown)
+                hiddenInput.value = '';
+                searchInput.classList.remove('store-selected');  // Remove visual indicator
+                
+                if (query === '') {
+                    showAllStores();
+                } else {
+                    filterStores(query);
+                }
+            });
+
+            // Hide dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+
+        function showAllStores() {
+            const dropdown = document.getElementById('storeDropdown');
+            dropdown.innerHTML = '';
+            dropdown.classList.remove('hidden');
+
+            console.log('Showing all stores:', allStores.map(s => s.name));
+
+            allStores.forEach(store => {
+                const item = createStoreItem(store);
+                dropdown.appendChild(item);
+            });
+        }
+
+        function filterStores(query) {
+            const dropdown = document.getElementById('storeDropdown');
+            dropdown.innerHTML = '';
+            dropdown.classList.remove('hidden');
+
+            console.log(`\n=== Searching for: "${query}" ===`);
+            console.log('Total stores:', allStores.length);
+            
+            const filtered = allStores.filter(store => {
+                const matches = store.searchText.includes(query);
+                if (query === '5775' || query.includes('fort')) {
+                    console.log(`Testing: "${store.name}" | searchText: "${store.searchText}" | matches: ${matches}`);
+                }
+                return matches;
+            });
+
+            console.log(`Found ${filtered.length} stores matching "${query}"`);
+            if (filtered.length > 0) {
+                console.log('Matching stores:', filtered.map(s => s.name));
+            }
+
+            if (filtered.length === 0) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'store-dropdown-empty';
+                emptyDiv.textContent = 'No stores found';
+                dropdown.appendChild(emptyDiv);
+            } else {
+                filtered.forEach(store => {
+                    const item = createStoreItem(store);
+                    dropdown.appendChild(item);
+                });
+            }
+        }
+
+        function createStoreItem(store) {
+            const item = document.createElement('div');
+            item.className = 'store-dropdown-item';
+            item.textContent = store.name;
+            item.dataset.storeId = store.id;
+            item.dataset.storeName = store.name;
+
+            item.addEventListener('click', () => {
+                selectStore(store.id, store.name);
+            });
+
+            return item;
+        }
+
+        function selectStore(storeId, storeName) {
+            const searchInput = document.getElementById('storeSearch');
+            const hiddenInput = document.getElementById('storeName');
+            const dropdown = document.getElementById('storeDropdown');
+
+            searchInput.value = storeName;
+            hiddenInput.value = storeId;
+            dropdown.classList.add('hidden');
+            
+            // Visual indicator that store is selected
+            searchInput.classList.add('store-selected');
+        }
+
 
         // ==========================================
         // LOAD QUESTIONS FROM AIRTABLE API
@@ -1553,16 +1837,22 @@
             failureContainer.classList.add('hidden');
             matthewContainer.classList.add('hidden');
             
+            // Determine if should show failure image
+            // 2 questions: show failure on 50% or less (score <= 1)
+            // 3 questions: show failure on < 67% (score < 2)
+            const shouldShowFailure = (questions.length === 2 && score <= 1) || 
+                                     (questions.length >= 3 && score < 2);
+            
             if (percentage === 100) {
                 message = 'Perfect score! Excellent work! 🌟';
                 // Show Matthew's animated photo
                 matthewContainer.classList.remove('hidden');
-            } else if (percentage >= 67) {
-                message = 'Good job! Keep up the great work! 👍';
-            } else {
+            } else if (shouldShowFailure) {
                 message = '';  // No message needed - the image has the text
                 // Show Office Space failure image
                 failureContainer.classList.remove('hidden');
+            } else {
+                message = 'Good job! Keep up the great work! 👍';
             }
             document.getElementById('scoreMessage').textContent = message;
 
@@ -1585,6 +1875,7 @@
                 const resultRecord = {
                     fields: {
                         Name: userName,
+                        StoreName: [userStoreRecordId],  // Linked record (array of record IDs)
                         Management: isManagement,  // Boolean for checkbox
                         Date: new Date().toISOString(),
                         Score: percentage,
