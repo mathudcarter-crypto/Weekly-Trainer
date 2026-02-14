@@ -1080,28 +1080,36 @@
                         correctAnswer: fields.CorrectAnswer || '',
                         wrongAnswers: fields.WrongAnswers || '',
                         image: fields.Image && fields.Image.length > 0 ? fields.Image[0].url : null,
-                        notes: fields.QuestionNotes || ''
+                        notes: fields.QuestionNotes || '',
+                        week: fields.Week || '',  // For sorting if available
+                        createdTime: record.createdTime  // Airtable creation time for consistent ordering
                     };
                 });
 
-                // Filter questions based on management status
+                // Sort all questions by creation time for consistent ordering
+                allQuestions.sort((a, b) => new Date(a.createdTime) - new Date(b.createdTime));
+
+                // Filter questions by category
                 const productKnowledge = allQuestions.filter(q => q.category === 'Product Knowledge');
                 const policyProcedure = allQuestions.filter(q => q.category === 'Policy/Procedure');
                 const management = allQuestions.filter(q => q.category === 'Management');
 
-                // Select one from each category
+                // Build questions array in consistent order
                 questions = [];
                 
+                // Q1: First Product Knowledge question (everyone gets same one)
                 if (productKnowledge.length > 0) {
-                    questions.push(productKnowledge[Math.floor(Math.random() * productKnowledge.length)]);
+                    questions.push(productKnowledge[0]);
                 }
                 
+                // Q2: First Policy/Procedure question (everyone gets same one)
                 if (policyProcedure.length > 0) {
-                    questions.push(policyProcedure[Math.floor(Math.random() * policyProcedure.length)]);
+                    questions.push(policyProcedure[0]);
                 }
                 
+                // Q3: First Management question (only for management users)
                 if (isManagement && management.length > 0) {
-                    questions.push(management[Math.floor(Math.random() * management.length)]);
+                    questions.push(management[0]);
                 }
 
                 if (questions.length === 0) {
@@ -1109,8 +1117,7 @@
                     return;
                 }
 
-                // Shuffle questions
-                questions = shuffleArray(questions);
+                console.log('Questions loaded:', questions.map(q => `${q.category}: ${q.question.substring(0, 50)}`));
                 
                 startQuiz();
             } catch (error) {
@@ -1884,8 +1891,8 @@
                     }
                 };
 
-                // Add question details
-                userAnswers.forEach((answer, index) => {
+                // Add question details (only first 3 questions - Results table only has Q1, Q2, Q3)
+                userAnswers.slice(0, 3).forEach((answer, index) => {
                     const qNum = index + 1;
                     resultRecord.fields[`Q${qNum}_Question`] = answer.question;
                     resultRecord.fields[`Q${qNum}_Category`] = answer.category;
