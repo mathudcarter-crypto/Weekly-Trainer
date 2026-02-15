@@ -1895,12 +1895,44 @@
         // ==========================================
         function renderMatching(question, container) {
             // Parse correct answer: "Term1=Def1|Term2=Def2|Term3=Def3"
-            const pairs = question.correctAnswer.split('|').map(pair => {
-                const [term, definition] = pair.split('=').map(s => s.trim());
+            console.log('Raw correctAnswer:', question.correctAnswer);
+            
+            // Clean the input first
+            const cleanAnswer = question.correctAnswer.trim();
+            console.log('Cleaned answer:', cleanAnswer);
+            
+            // Split by pipe and filter out empty strings
+            const pairStrings = cleanAnswer.split('|').filter(p => p.trim());
+            console.log('Pair strings:', pairStrings);
+            
+            const pairs = pairStrings.map(pair => {
+                const trimmedPair = pair.trim();
+                const equalIndex = trimmedPair.indexOf('=');
+                
+                if (equalIndex === -1) {
+                    console.error('No equals sign found in:', trimmedPair);
+                    return null;
+                }
+                
+                const term = trimmedPair.substring(0, equalIndex).trim();
+                const definition = trimmedPair.substring(equalIndex + 1).trim();
+                
+                console.log('Parsed pair - Term:', term, 'Definition:', definition);
+                
                 return { term, definition };
-            });
+            }).filter(p => p !== null && p.term && p.definition);
+            
+            console.log('Final pairs:', pairs);
+            
+            if (pairs.length === 0) {
+                container.innerHTML = '<p style="color:red;background:#AAC2DE;padding:20px;border-radius:8px;">Error: Could not parse matching question. Please check the CorrectAnswer format in Airtable.</p>';
+                return;
+            }
 
             const allDefinitions = pairs.map(p => p.definition);
+            
+            // Shuffle definitions so they don't match the term order
+            const shuffledDefinitions = [...allDefinitions].sort(() => Math.random() - 0.5);
             
             const matchingDiv = document.createElement('div');
             matchingDiv.className = 'matching-container';
@@ -1913,6 +1945,7 @@
                 const termDiv = document.createElement('div');
                 termDiv.className = 'matching-term';
                 termDiv.textContent = pair.term;
+                console.log('Creating term box with text:', pair.term);
 
                 const selectDiv = document.createElement('select');
                 selectDiv.className = 'matching-select';
@@ -1927,16 +1960,30 @@
                 placeholderOption.selected = true;
                 selectDiv.appendChild(placeholderOption);
 
-                // Add all definitions
-                allDefinitions.forEach(def => {
+                // Add clear option
+                const clearOption = document.createElement('option');
+                clearOption.value = 'CLEAR';
+                clearOption.textContent = '✕ Clear Selection';
+                clearOption.style.color = '#991b1b';
+                clearOption.style.fontWeight = '600';
+                selectDiv.appendChild(clearOption);
+
+                // Add all definitions (shuffled)
+                shuffledDefinitions.forEach(def => {
                     const option = document.createElement('option');
                     option.value = def;
                     option.textContent = def;
                     selectDiv.appendChild(option);
+                    console.log('Added option:', def.substring(0, 50) + '...');
                 });
 
                 // Update other dropdowns when this one changes
-                selectDiv.addEventListener('change', () => updateMatchingDropdowns());
+                selectDiv.addEventListener('change', (e) => {
+                    if (e.target.value === 'CLEAR') {
+                        e.target.value = '';
+                    }
+                    updateMatchingDropdowns();
+                });
 
                 rowDiv.appendChild(termDiv);
                 rowDiv.appendChild(selectDiv);
@@ -1952,13 +1999,16 @@
             submitBtn.id = 'matchingSubmitBtn';
             submitBtn.onclick = () => submitMatching(pairs);
             container.appendChild(submitBtn);
+            
+            // Initialize dropdown states (hide clear option initially)
+            updateMatchingDropdowns();
         }
 
         function updateMatchingDropdowns() {
             const selects = document.querySelectorAll('.matching-select');
             const selectedValues = [...selects]
                 .map(s => s.value)
-                .filter(v => v !== '');
+                .filter(v => v !== '' && v !== 'CLEAR');
 
             selects.forEach(select => {
                 const currentValue = select.value;
@@ -1966,16 +2016,27 @@
                 
                 options.forEach(option => {
                     if (option.value === '') {
-                        // Placeholder - always enabled
+                        // Placeholder - always show
+                        option.style.display = '';
                         option.disabled = false;
+                    } else if (option.value === 'CLEAR') {
+                        // Clear option - show only when something is selected
+                        if (currentValue && currentValue !== '') {
+                            option.style.display = '';
+                            option.disabled = false;
+                        } else {
+                            option.style.display = 'none';
+                        }
                     } else if (option.value === currentValue) {
-                        // Current selection - always enabled
+                        // Current selection - always show and enabled
+                        option.style.display = '';
                         option.disabled = false;
                     } else if (selectedValues.includes(option.value)) {
-                        // Used by another dropdown - disabled
-                        option.disabled = true;
+                        // Used by another dropdown - hide it
+                        option.style.display = 'none';
                     } else {
-                        // Available - enabled
+                        // Available - show and enable
+                        option.style.display = '';
                         option.disabled = false;
                     }
                 });
