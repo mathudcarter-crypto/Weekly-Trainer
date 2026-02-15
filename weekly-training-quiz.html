@@ -414,16 +414,14 @@
         }
 
         .matching-term {
-            padding: 20px;
-            background: #FFD100;
+            padding: 15px 20px;
+            background: white;
             border-radius: 8px;
-            font-weight: 700;
-            font-size: 1.3em;
+            font-weight: 400;
+            font-size: 1em;
             color: #002E5D;
-            border: 3px solid #002E5D;
-            min-width: 120px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 2px solid #e0e0e0;
+            text-align: left;
         }
 
         .matching-select {
@@ -844,8 +842,9 @@
         }
 
         .container.study-mode .matching-term {
-            background: #FFD100 !important;
+            background: white !important;
             color: #002E5D !important;
+            border-color: #e0e0e0 !important;
         }
 
         .container.study-mode .quiz-screen {
@@ -1660,6 +1659,12 @@
         function renderRanking(question, container) {
             const correctOrder = question.correctAnswer.split('|').map(s => s.trim());
             const shuffled = shuffleArray([...correctOrder]);
+
+            // Add instruction text
+            const instructionDiv = document.createElement('div');
+            instructionDiv.style.cssText = 'margin-bottom: 20px; padding: 15px; background: #f0f7fc; border-left: 4px solid #9BB8D3; border-radius: 8px; color: #002E5D; font-size: 1em;';
+            instructionDiv.innerHTML = '<strong>📋 Instructions:</strong> Drag the items below into the correct order (top to bottom).';
+            container.appendChild(instructionDiv);
 
             const rankingDiv = document.createElement('div');
             rankingDiv.className = 'answer-options';
