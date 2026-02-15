@@ -514,9 +514,13 @@
         }
 
         .results-screen h2 {
-            color: #333;
+            color: #AAC2DE;
             font-size: 2em;
             margin-bottom: 20px;
+        }
+
+        .results-screen p {
+            color: #AAC2DE;
         }
 
         .score {
@@ -530,7 +534,7 @@
 
         .score-message {
             font-size: 1.3em;
-            color: #555;
+            color: #AAC2DE;
             margin-bottom: 30px;
         }
 
@@ -552,7 +556,7 @@
 
         .failure-text {
             font-size: 1.2em;
-            color: #333;
+            color: #AAC2DE;
             line-height: 1.6;
             font-weight: 500;
         }
@@ -627,15 +631,16 @@
         .loading {
             text-align: center;
             padding: 40px;
-            color: #666;
+            color: #AAC2DE;
         }
 
         .error {
-            background: #fee2e2;
+            background: #AAC2DE;
             color: #991b1b;
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
+            font-weight: 600;
         }
 
         .hidden {
@@ -976,15 +981,8 @@
         <div class="card">
             <!-- Setup Screen -->
             <div class="setup-screen" id="setupScreen">
-                <div class="mode-selector">
-                    <div class="mode-tabs">
-                        <button class="mode-tab active" id="weeklyTabSetup">Weekly Test</button>
-                        <button class="mode-tab" id="studyTabSetup" onclick="switchToStudyMode()">Study Topics</button>
-                    </div>
-                </div>
-
                 <h2>Welcome to Weekly Training</h2>
-                <p>Answer this week's questions to test your knowledge</p>
+                <p>Fill in your information to get started</p>
                 
                 <div class="input-group">
                     <label for="userName">Your Name</label>
@@ -1016,7 +1014,10 @@
                     </div>
                 </div>
 
-                <button class="btn" id="startBtn">Start Quiz</button>
+                <div style="display: flex; gap: 15px; margin-top: 10px;">
+                    <button class="btn" id="startWeeklyBtn" style="flex: 1;">Start Weekly Quiz</button>
+                    <button class="btn" id="browseStudyBtn" style="flex: 1; background: #9BB8D3;">Browse Study Topics</button>
+                </div>
                 <div id="errorMessage" class="error hidden"></div>
             </div>
 
@@ -1152,9 +1153,9 @@
         });
 
         // ==========================================
-        // START QUIZ
+        // VALIDATE SETUP FORM
         // ==========================================
-        document.getElementById('startBtn').addEventListener('click', async () => {
+        function validateSetupForm() {
             userName = document.getElementById('userName').value.trim();
             const storeHiddenInput = document.getElementById('storeName');
             const storeSearchInput = document.getElementById('storeSearch');
@@ -1162,28 +1163,55 @@
 
             if (!userName) {
                 showError('Please enter your name');
-                return;
+                return false;
             }
 
             if (!storeHiddenInput.value) {
                 showError('Please select your store from the list');
-                return;
+                return false;
             }
 
             if (!mgmtRadio) {
                 showError('Please select whether you are in management');
-                return;
+                return false;
             }
 
             // Get store info from hidden input and search input
             userStore = storeSearchInput.value;
             userStoreRecordId = storeHiddenInput.value;
-
             isManagement = mgmtRadio.value === 'yes';
             localStorage.setItem('userName', userName);
-
+            
             hideError();
+            return true;
+        }
+
+        // ==========================================
+        // START WEEKLY QUIZ
+        // ==========================================
+        document.getElementById('startWeeklyBtn').addEventListener('click', async () => {
+            if (!validateSetupForm()) return;
+            
+            studyMode = false;
             await loadQuestions();
+        });
+
+        // ==========================================
+        // BROWSE STUDY TOPICS
+        // ==========================================
+        document.getElementById('browseStudyBtn').addEventListener('click', () => {
+            if (!validateSetupForm()) return;
+            
+            studyMode = true;
+            document.getElementById('setupScreen').style.display = 'none';
+            document.getElementById('studyScreen').style.display = 'block';
+            document.querySelector('.container').classList.add('study-mode');
+            
+            if (studyQuestions.length === 0) {
+                loadStudyQuestions();
+            } else {
+                displayTopics();
+            }
         });
 
         // ==========================================
