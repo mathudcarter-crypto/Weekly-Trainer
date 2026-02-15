@@ -2023,37 +2023,62 @@
 
             selects.forEach(select => {
                 const currentValue = select.value;
-                const options = select.querySelectorAll('option');
                 
                 console.log(`Updating dropdown (current: ${currentValue})`);
                 
-                options.forEach(option => {
-                    if (option.value === '') {
-                        // Placeholder - always show
-                        option.hidden = false;
-                        option.disabled = false;
-                    } else if (option.value === 'CLEAR') {
-                        // Clear option - show only when something is selected
-                        if (currentValue && currentValue !== '' && currentValue !== 'CLEAR') {
-                            option.hidden = false;
-                            option.disabled = false;
+                // Store the current value to restore it
+                const savedValue = currentValue;
+                
+                // Get all possible definitions from data attributes
+                const correctDef = select.dataset.correctDefinition;
+                
+                // Clear all options
+                select.innerHTML = '';
+                
+                // Add placeholder
+                const placeholderOption = document.createElement('option');
+                placeholderOption.value = '';
+                placeholderOption.textContent = 'Select definition...';
+                placeholderOption.disabled = true;
+                placeholderOption.selected = (savedValue === '');
+                select.appendChild(placeholderOption);
+                
+                // Add clear option if something is selected
+                if (savedValue && savedValue !== '' && savedValue !== 'CLEAR') {
+                    const clearOption = document.createElement('option');
+                    clearOption.value = 'CLEAR';
+                    clearOption.textContent = '✕ Clear Selection';
+                    clearOption.style.color = '#991b1b';
+                    clearOption.style.fontWeight = '600';
+                    select.appendChild(clearOption);
+                    console.log('  Added clear option');
+                }
+                
+                // Add all definitions, but skip ones selected by OTHER dropdowns
+                const allSelects = document.querySelectorAll('.matching-select');
+                allSelects.forEach(otherSelect => {
+                    const def = otherSelect.dataset.correctDefinition;
+                    
+                    // Add this definition if:
+                    // 1. It's the current value of THIS dropdown, OR
+                    // 2. It's not selected in any OTHER dropdown
+                    const isCurrentValue = (def === savedValue);
+                    const isSelectedElsewhere = selectedValues.includes(def) && !isCurrentValue;
+                    
+                    if (!isSelectedElsewhere || isCurrentValue) {
+                        const option = document.createElement('option');
+                        option.value = def;
+                        option.textContent = def;
+                        option.selected = (def === savedValue);
+                        select.appendChild(option);
+                        
+                        if (isCurrentValue) {
+                            console.log('  Added current:', def.substring(0, 30));
                         } else {
-                            option.hidden = true;
+                            console.log('  Added available:', def.substring(0, 30));
                         }
-                    } else if (option.value === currentValue) {
-                        // Current selection - always show and enabled
-                        option.hidden = false;
-                        option.disabled = false;
-                        console.log('  Showing current:', option.textContent.substring(0, 30));
-                    } else if (selectedValues.includes(option.value)) {
-                        // Used by another dropdown - hide it
-                        option.hidden = true;
-                        console.log('  Hiding used:', option.textContent.substring(0, 30));
                     } else {
-                        // Available - show and enable
-                        option.hidden = false;
-                        option.disabled = false;
-                        console.log('  Showing available:', option.textContent.substring(0, 30));
+                        console.log('  Skipped (used elsewhere):', def.substring(0, 30));
                     }
                 });
             });
