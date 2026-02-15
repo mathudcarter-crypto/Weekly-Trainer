@@ -505,7 +505,40 @@
 
         .notes-content {
             line-height: 1.6;
-            white-space: pre-wrap;
+        }
+
+        /* Markdown formatting in notes */
+        .notes-content h3 {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #002E5D;
+            margin: 15px 0 10px 0;
+        }
+
+        .notes-content h4 {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #002E5D;
+            margin: 12px 0 8px 0;
+        }
+
+        .notes-content ul {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+
+        .notes-content li {
+            margin: 5px 0;
+            line-height: 1.5;
+        }
+
+        .notes-content strong {
+            font-weight: 700;
+            color: #002E5D;
+        }
+
+        .notes-content p {
+            margin: 10px 0;
         }
 
         .results-screen {
@@ -2558,13 +2591,7 @@
                 title.className = 'topic-title';
                 title.textContent = topic;
 
-                const count = document.createElement('div');
-                count.className = 'topic-count';
-                const questionCount = topics[topic].length;
-                count.textContent = `${questionCount} question${questionCount === 1 ? '' : 's'}`;
-
                 card.appendChild(title);
-                card.appendChild(count);
                 topicsList.appendChild(card);
             });
         }
@@ -2658,6 +2685,42 @@
         }
 
         // ==========================================
+        // MARKDOWN TO HTML CONVERTER
+        // ==========================================
+        function parseMarkdown(text) {
+            if (!text) return '';
+            
+            let html = text;
+            
+            // Convert ## headers to h3
+            html = html.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+            
+            // Convert ### headers to h4
+            html = html.replace(/^### (.+)$/gm, '<h4>$1</h4>');
+            
+            // Convert **bold** to <strong>
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            
+            // Convert lines starting with - to bullet points
+            html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+            
+            // Wrap consecutive <li> items in <ul>
+            html = html.replace(/(<li>.*<\/li>\n?)+/g, function(match) {
+                return '<ul>' + match + '</ul>';
+            });
+            
+            // Convert double newlines to paragraphs
+            html = html.split('\n\n').map(para => {
+                if (para.trim() && !para.startsWith('<h') && !para.startsWith('<ul')) {
+                    return '<p>' + para.replace(/\n/g, '<br>') + '</p>';
+                }
+                return para;
+            }).join('\n');
+            
+            return html;
+        }
+
+        // ==========================================
         // ENHANCED FEEDBACK WITH IMAGES & VIDEOS
         // ==========================================
         function displayEnhancedFeedback(question, isCorrect, feedback) {
@@ -2677,7 +2740,7 @@
                         </svg>
                         Note:
                     </div>
-                    <div class="notes-content">${question.notes}</div>
+                    <div class="notes-content">${parseMarkdown(question.notes)}</div>
                 `;
                 feedback.appendChild(notesDiv);
             }
