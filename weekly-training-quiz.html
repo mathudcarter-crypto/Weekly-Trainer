@@ -1188,10 +1188,12 @@
         // INITIALIZE
         // ==========================================
         window.addEventListener('load', () => {
+            console.log('=== PAGE LOADED ===');
             const savedName = localStorage.getItem('userName');
             if (savedName) {
                 document.getElementById('userName').value = savedName;
             }
+            console.log('About to call loadStores()');
             loadStores();  // Load store list from Airtable
         });
 
@@ -1263,7 +1265,9 @@
         let allStores = [];  // Global store list
 
         async function loadStores() {
+            console.log('=== LOADING STORES ===');
             try {
+                console.log('CONFIG:', CONFIG);
                 let allRecords = [];
                 let offset = null;
                 
