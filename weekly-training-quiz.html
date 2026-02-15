@@ -2015,34 +2015,45 @@
                 .map(s => s.value)
                 .filter(v => v !== '' && v !== 'CLEAR');
 
+            console.log('Selected values:', selectedValues);
+
             selects.forEach(select => {
                 const currentValue = select.value;
                 const options = select.querySelectorAll('option');
                 
+                console.log(`Updating dropdown (current: ${currentValue})`);
+                
                 options.forEach(option => {
                     if (option.value === '') {
                         // Placeholder - always show
-                        option.style.display = '';
+                        option.hidden = false;
                         option.disabled = false;
                     } else if (option.value === 'CLEAR') {
                         // Clear option - show only when something is selected
-                        if (currentValue && currentValue !== '') {
-                            option.style.display = '';
+                        if (currentValue && currentValue !== '' && currentValue !== 'CLEAR') {
+                            option.hidden = false;
                             option.disabled = false;
                         } else {
-                            option.style.display = 'none';
+                            option.hidden = true;
                         }
                     } else if (option.value === currentValue) {
                         // Current selection - always show and enabled
-                        option.style.display = '';
+                        option.hidden = false;
                         option.disabled = false;
+                        console.log('  Showing current:', option.textContent.substring(0, 30));
                     } else if (selectedValues.includes(option.value)) {
                         // Used by another dropdown - hide it
-                        option.style.display = 'none';
+                        option.hidden = true;
+                        console.log('  Hiding used:', option.textContent.substring(0, 30));
                     } else {
                         // Available - show and enable
-                        option.style.display = '';
+                        option.hidden = false;
                         option.disabled = false;
+                        console.log('  Showing available:', option.textContent.substring(0, 30));
+                    }
+                });
+            });
+        }
                     }
                 });
             });
