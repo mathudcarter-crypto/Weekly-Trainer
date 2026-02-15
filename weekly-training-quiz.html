@@ -414,12 +414,16 @@
         }
 
         .matching-term {
-            padding: 15px;
-            background: #f9fafb;
+            padding: 20px;
+            background: #FFD100;
             border-radius: 8px;
-            font-weight: 600;
+            font-weight: 700;
+            font-size: 1.3em;
             color: #002E5D;
-            border-left: 4px solid #FFD100;
+            border: 3px solid #002E5D;
+            min-width: 120px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .matching-select {
@@ -835,8 +839,12 @@
 
         .container.study-mode .option-label,
         .container.study-mode label,
-        .container.study-mode .ranking-item,
+        .container.study-mode .ranking-item {
+            color: #002E5D !important;
+        }
+
         .container.study-mode .matching-term {
+            background: #FFD100 !important;
             color: #002E5D !important;
         }
 
