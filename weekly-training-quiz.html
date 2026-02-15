@@ -1054,7 +1054,10 @@
                     <div class="spinner"></div>
                     <p>Saving your results...</p>
                 </div>
-                <button class="btn" id="retakeBtn">Take Quiz Again</button>
+                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+                    <button class="btn" id="retakeBtn">Take Quiz Again</button>
+                    <button class="btn" id="backToTopicsBtn" style="background: #9BB8D3;">Back to Topics</button>
+                </div>
             </div>
         </div>
     </div>
@@ -2233,18 +2236,30 @@
             // Save results to Airtable
             await saveResults(percentage);
 
+            // Show/hide Back to Topics button based on study mode
+            const backToTopicsBtn = document.getElementById('backToTopicsBtn');
+            if (studyMode) {
+                backToTopicsBtn.style.display = 'inline-block';
+            } else {
+                backToTopicsBtn.style.display = 'none';
+            }
+
             document.getElementById('retakeBtn').onclick = () => {
-                if (studyMode) {
-                    // Return to study topics
-                    resultsScreen.style.display = 'none';
-                    document.getElementById('studyScreen').style.display = 'block';
-                    showSubtopics(currentTopic);
-                    studyMode = false;
-                    currentTopic = '';
-                    currentSubtopic = '';
-                } else {
-                    location.reload();
-                }
+                // Hide Matthew's success animation
+                document.getElementById('matthewSuccessContainer').classList.add('hidden');
+                
+                // Reload page to start over
+                location.reload();
+            };
+
+            document.getElementById('backToTopicsBtn').onclick = () => {
+                // Hide Matthew's success animation
+                document.getElementById('matthewSuccessContainer').classList.add('hidden');
+                
+                // Return to study topics
+                resultsScreen.style.display = 'none';
+                document.getElementById('studyScreen').style.display = 'block';
+                showSubtopics(currentTopic);
             };
         }
 
@@ -2385,6 +2400,9 @@
         function switchMode(mode) {
             const container = document.querySelector('.container');
             
+            // Hide Matthew's success animation when switching modes
+            document.getElementById('matthewSuccessContainer').classList.add('hidden');
+            
             if (mode === 'weekly') {
                 document.getElementById('studyScreen').style.display = 'none';
                 document.getElementById('setupScreen').style.display = 'block';
@@ -2414,6 +2432,9 @@
         function goHome() {
             const container = document.querySelector('.container');
             
+            // Hide Matthew's success animation if visible
+            document.getElementById('matthewSuccessContainer').classList.add('hidden');
+            
             // Hide all screens
             document.getElementById('studyScreen').style.display = 'none';
             document.getElementById('quizScreen').style.display = 'none';
@@ -2438,6 +2459,9 @@
         }
 
         function exitStudyQuiz() {
+            // Hide Matthew's success animation if visible
+            document.getElementById('matthewSuccessContainer').classList.add('hidden');
+            
             // Hide quiz screen
             document.getElementById('quizScreen').style.display = 'none';
             
