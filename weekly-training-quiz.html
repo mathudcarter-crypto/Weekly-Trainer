@@ -674,7 +674,176 @@
                 max-height: 250px;
             }
         }
-    </style>
+    
+        /* ==========================================
+           TAB NAVIGATION & STUDY MODE
+           ========================================== */
+        .mode-selector {
+            margin-bottom: 30px;
+        }
+
+        .mode-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .mode-tab {
+            flex: 1;
+            padding: 15px 20px;
+            background: #f9fafb;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .mode-tab:hover {
+            background: #f0f0f0;
+        }
+
+        .mode-tab.active {
+            background: white;
+            color: #002E5D;
+            border-bottom-color: #FFD100;
+        }
+
+        /* Study Topics Browser */
+        .study-screen {
+            display: none;
+        }
+
+        .topics-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .topic-card {
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 12px;
+            border-left: 4px solid #FFD100;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .topic-card:hover {
+            background: #f0f7fc;
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .topic-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #002E5D;
+            margin-bottom: 5px;
+        }
+
+        .topic-count {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .subtopics-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .subtopic-card {
+            padding: 15px 20px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .subtopic-card:hover {
+            border-color: #9BB8D3;
+            background: #f0f7fc;
+        }
+
+        .subtopic-name {
+            font-weight: 600;
+            color: #002E5D;
+        }
+
+        .subtopic-questions {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #e0e0e0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: #d0d0d0;
+        }
+
+        /* Enhanced Feedback */
+        .notes-image {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .notes-image img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .notes-video {
+            margin: 20px 0;
+        }
+
+        .video-label {
+            font-weight: 600;
+            color: #002E5D;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+</style>
 </head>
 <body>
     <div class="container">
@@ -687,6 +856,13 @@
         <div class="card">
             <!-- Setup Screen -->
             <div class="setup-screen" id="setupScreen">
+                <div class="mode-selector">
+                    <div class="mode-tabs">
+                        <button class="mode-tab active" id="weeklyTabSetup">Weekly Test</button>
+                        <button class="mode-tab" id="studyTabSetup" onclick="switchToStudyMode()">Study Topics</button>
+                    </div>
+                </div>
+
                 <h2>Welcome to Weekly Training</h2>
                 <p>Answer this week's questions to test your knowledge</p>
                 
@@ -760,6 +936,31 @@
         </div>
     </div>
 
+
+
+            <!-- Study Mode Screen -->
+            <div class="study-screen" id="studyScreen">
+                <div class="mode-selector">
+                    <div class="mode-tabs">
+                        <button class="mode-tab" id="weeklyTab" onclick="switchMode('weekly')">Weekly Test</button>
+                        <button class="mode-tab active" id="studyTab" onclick="switchMode('study')">Study Topics</button>
+                    </div>
+                </div>
+
+                <!-- Topics Browser -->
+                <div id="topicsBrowser">
+                    <h2>📚 Study Topics</h2>
+                    <p>Choose a topic to begin studying</p>
+                    <div class="topics-list" id="topicsList"></div>
+                </div>
+
+                <!-- Subtopics Browser -->
+                <div id="subtopicsBrowser" class="hidden">
+                    <button class="back-btn" onclick="showTopics()">← Back to Topics</button>
+                    <h2 id="subtopicsBrowserTitle"></h2>
+                    <div class="subtopics-list" id="subtopicsList"></div>
+                </div>
+            </div>
 
     <!-- Matthew's success animation (only shows on 100%) -->
     <div id="matthewSuccessContainer" class="matthew-success-container hidden">
@@ -1737,13 +1938,8 @@
                 feedback.innerHTML = `✗ Incorrect after 3 attempts.<div class="correct-answer-display">The correct answer is: <strong>${correctAnswer.replace(/\|/g, ', ')}</strong></div>`;
             }
 
-            // Add notes if they exist
-            if (question.notes && question.notes.trim() !== '') {
-                const notesDiv = document.createElement('div');
-                notesDiv.className = 'question-notes';
-                notesDiv.innerHTML = `<div class="notes-label">📝 Note:</div><div class="notes-content">${question.notes}</div>`;
-                feedback.appendChild(notesDiv);
-            }
+            // Add enhanced feedback (notes + images + videos)
+            displayEnhancedFeedback(question, isCorrect, feedback);
 
             // Store answer
             userAnswers.push({
@@ -1792,13 +1988,8 @@
                 feedback.innerHTML = `✗ Incorrect.<div class="correct-answer-display">The correct answer is: <strong>${correctAnswer}</strong></div>`;
             }
 
-            // Add notes if they exist
-            if (question.notes && question.notes.trim() !== '') {
-                const notesDiv = document.createElement('div');
-                notesDiv.className = 'question-notes';
-                notesDiv.innerHTML = `<div class="notes-label">📝 Note:</div><div class="notes-content">${question.notes}</div>`;
-                feedback.appendChild(notesDiv);
-            }
+            // Add enhanced feedback (notes + images + videos)
+            displayEnhancedFeedback(question, isCorrect, feedback);
 
             // Store answer
             userAnswers.push({
@@ -1867,7 +2058,17 @@
             await saveResults(percentage);
 
             document.getElementById('retakeBtn').onclick = () => {
-                location.reload();
+                if (studyMode) {
+                    // Return to study topics
+                    resultsScreen.style.display = 'none';
+                    document.getElementById('studyScreen').style.display = 'block';
+                    showSubtopics(currentTopic);
+                    studyMode = false;
+                    currentTopic = '';
+                    currentSubtopic = '';
+                } else {
+                    location.reload();
+                }
             };
         }
 
@@ -1887,7 +2088,10 @@
                         Date: new Date().toISOString(),
                         Score: percentage,
                         TotalQuestions: questions.length,
-                        Passed: percentage === 100  // Boolean for checkbox
+                        Passed: percentage === 100,  // Boolean for checkbox
+                        StudyMode: studyMode || false,  // Boolean for checkbox
+                        Topic: studyMode ? currentTopic : '',
+                        Subtopic: studyMode ? currentSubtopic : ''
                     }
                 };
 
@@ -1990,6 +2194,288 @@
             const manifestURL = URL.createObjectURL(manifestBlob);
             manifestLink.href = manifestURL;
         })();
+    
+        // ==========================================
+        // STUDY MODE VARIABLES
+        // ==========================================
+        let studyQuestions = [];
+        let studyMode = false;
+        let currentTopic = '';
+        let currentSubtopic = '';
+
+        // ==========================================
+        // MODE SWITCHING
+        // ==========================================
+        function switchMode(mode) {
+            if (mode === 'weekly') {
+                document.getElementById('studyScreen').style.display = 'none';
+                document.getElementById('setupScreen').style.display = 'block';
+                document.getElementById('weeklyTab').classList.add('active');
+                document.getElementById('studyTab').classList.remove('active');
+                studyMode = false;
+            } else {
+                document.getElementById('setupScreen').style.display = 'none';
+                document.getElementById('studyScreen').style.display = 'block';
+                document.getElementById('weeklyTab').classList.remove('active');
+                document.getElementById('studyTab').classList.add('active');
+                studyMode = true;
+                if (studyQuestions.length === 0) {
+                    loadStudyQuestions();
+                } else {
+                    displayTopics();
+                }
+            }
+        }
+
+        function switchToStudyMode() {
+            switchMode('study');
+        }
+
+        // ==========================================
+        // LOAD STUDY QUESTIONS
+        // ==========================================
+        async function loadStudyQuestions() {
+            try {
+                const topicsList = document.getElementById('topicsList');
+                topicsList.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading study topics...</p></div>';
+
+                const url = `https://api.airtable.com/v0/${CONFIG.baseId}/${CONFIG.questionsTable}?filterByFormula=AND({Topic}!='',{Subtopic}!='')`;
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${CONFIG.apiKey}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load study questions');
+                }
+
+                const data = await response.json();
+
+                studyQuestions = data.records.map(record => {
+                    const fields = record.fields;
+                    return {
+                        question: fields.Question || '',
+                        category: fields.Category || '',
+                        questionType: fields.QuestionType || '',
+                        correctAnswer: fields.CorrectAnswer || '',
+                        wrongAnswers: fields.WrongAnswers || '',
+                        image: fields.Image && fields.Image.length > 0 ? fields.Image[0].url : null,
+                        notes: fields.QuestionNotes || '',
+                        topic: fields.Topic || '',
+                        subtopic: fields.Subtopic || '',
+                        notesImage: fields.NotesImage && fields.NotesImage.length > 0 ? fields.NotesImage[0].url : null,
+                        videoLink: fields.VideoLink || ''
+                    };
+                });
+
+                console.log(`Loaded ${studyQuestions.length} study questions`);
+                displayTopics();
+
+            } catch (error) {
+                console.error('Error loading study questions:', error);
+                document.getElementById('topicsList').innerHTML = '<div class="error">Failed to load topics. Please try again.</div>';
+            }
+        }
+
+        // ==========================================
+        // DISPLAY TOPICS
+        // ==========================================
+        function displayTopics() {
+            const topicsList = document.getElementById('topicsList');
+            document.getElementById('topicsBrowser').classList.remove('hidden');
+            document.getElementById('subtopicsBrowser').classList.add('hidden');
+
+            // Group questions by topic
+            const topics = {};
+            studyQuestions.forEach(q => {
+                if (!topics[q.topic]) {
+                    topics[q.topic] = [];
+                }
+                topics[q.topic].push(q);
+            });
+
+            // Sort topics alphabetically
+            const sortedTopics = Object.keys(topics).sort();
+
+            if (sortedTopics.length === 0) {
+                topicsList.innerHTML = '<p style="text-align:center;color:#666;">No study topics available yet. Add Topic and Subtopic to your questions!</p>';
+                return;
+            }
+
+            topicsList.innerHTML = '';
+            sortedTopics.forEach(topic => {
+                const card = document.createElement('div');
+                card.className = 'topic-card';
+                card.onclick = () => showSubtopics(topic);
+
+                const title = document.createElement('div');
+                title.className = 'topic-title';
+                title.textContent = topic;
+
+                const count = document.createElement('div');
+                count.className = 'topic-count';
+                const questionCount = topics[topic].length;
+                count.textContent = `${questionCount} question${questionCount === 1 ? '' : 's'}`;
+
+                card.appendChild(title);
+                card.appendChild(count);
+                topicsList.appendChild(card);
+            });
+        }
+
+        // ==========================================
+        // SHOW SUBTOPICS
+        // ==========================================
+        function showSubtopics(topic) {
+            currentTopic = topic;
+            document.getElementById('topicsBrowser').classList.add('hidden');
+            document.getElementById('subtopicsBrowser').classList.remove('hidden');
+            document.getElementById('subtopicsBrowserTitle').textContent = `📚 ${topic}`;
+
+            // Group by subtopic
+            const subtopics = {};
+            studyQuestions.forEach(q => {
+                if (q.topic === topic) {
+                    if (!subtopics[q.subtopic]) {
+                        subtopics[q.subtopic] = [];
+                    }
+                    subtopics[q.subtopic].push(q);
+                }
+            });
+
+            const sortedSubtopics = Object.keys(subtopics).sort();
+            const list = document.getElementById('subtopicsList');
+            list.innerHTML = '';
+
+            sortedSubtopics.forEach(subtopic => {
+                const card = document.createElement('div');
+                card.className = 'subtopic-card';
+                card.onclick = () => startStudyQuiz(topic, subtopic);
+
+                const name = document.createElement('div');
+                name.className = 'subtopic-name';
+                name.textContent = subtopic;
+
+                const count = document.createElement('div');
+                count.className = 'subtopic-questions';
+                const qCount = subtopics[subtopic].length;
+                count.textContent = `${qCount} question${qCount === 1 ? '' : 's'}`;
+
+                card.appendChild(name);
+                card.appendChild(count);
+                list.appendChild(card);
+            });
+        }
+
+        function showTopics() {
+            document.getElementById('topicsBrowser').classList.remove('hidden');
+            document.getElementById('subtopicsBrowser').classList.add('hidden');
+        }
+
+        // ==========================================
+        // START STUDY QUIZ
+        // ==========================================
+        function startStudyQuiz(topic, subtopic) {
+            currentTopic = topic;
+            currentSubtopic = subtopic;
+            studyMode = true;
+
+            // Filter questions for this subtopic
+            questions = studyQuestions.filter(q => 
+                q.topic === topic && q.subtopic === subtopic
+            );
+
+            if (questions.length === 0) {
+                alert('No questions found for this subtopic');
+                return;
+            }
+
+            document.getElementById('studyScreen').style.display = 'none';
+            startQuiz();
+        }
+
+        // ==========================================
+        // ENHANCED FEEDBACK WITH IMAGES & VIDEOS
+        // ==========================================
+        function displayEnhancedFeedback(question, isCorrect, feedback) {
+            // Add text notes if they exist
+            if (question.notes && question.notes.trim() !== '') {
+                const notesDiv = document.createElement('div');
+                notesDiv.className = 'question-notes';
+                notesDiv.innerHTML = `<div class="notes-label">📝 Note:</div><div class="notes-content">${question.notes}</div>`;
+                feedback.appendChild(notesDiv);
+            }
+
+            // Add image if it exists
+            if (question.notesImage) {
+                const imageDiv = document.createElement('div');
+                imageDiv.className = 'notes-image';
+                const img = document.createElement('img');
+                img.src = question.notesImage;
+                img.alt = 'Reference image';
+                imageDiv.appendChild(img);
+                feedback.appendChild(imageDiv);
+            }
+
+            // Add video if it exists
+            if (question.videoLink && question.videoLink.trim() !== '') {
+                const videoDiv = document.createElement('div');
+                videoDiv.className = 'notes-video';
+                
+                const label = document.createElement('div');
+                label.className = 'video-label';
+                label.innerHTML = '🎥 Video Explanation';
+                videoDiv.appendChild(label);
+
+                const embedUrl = getVideoEmbedUrl(question.videoLink);
+                if (embedUrl) {
+                    const container = document.createElement('div');
+                    container.className = 'video-container';
+                    const iframe = document.createElement('iframe');
+                    iframe.src = embedUrl;
+                    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+                    iframe.allowFullscreen = true;
+                    container.appendChild(iframe);
+                    videoDiv.appendChild(container);
+                } else {
+                    // Fallback for direct links
+                    const link = document.createElement('a');
+                    link.href = question.videoLink;
+                    link.target = '_blank';
+                    link.textContent = '▶ Watch Video';
+                    link.style.cssText = 'display:inline-block;padding:10px 20px;background:#FFD100;color:#002E5D;border-radius:8px;text-decoration:none;font-weight:600;';
+                    videoDiv.appendChild(link);
+                }
+
+                feedback.appendChild(videoDiv);
+            }
+        }
+
+        function getVideoEmbedUrl(url) {
+            // YouTube
+            if (url.includes('youtube.com/watch')) {
+                const videoId = url.split('v=')[1]?.split('&')[0];
+                return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+            }
+            if (url.includes('youtu.be/')) {
+                const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+                return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+            }
+            // Vimeo
+            if (url.includes('vimeo.com/')) {
+                const videoId = url.split('vimeo.com/')[1]?.split('?')[0];
+                return videoId ? `https://player.vimeo.com/video/${videoId}` : null;
+            }
+            // Loom
+            if (url.includes('loom.com/share/')) {
+                const videoId = url.split('loom.com/share/')[1]?.split('?')[0];
+                return videoId ? `https://www.loom.com/embed/${videoId}` : null;
+            }
+            return null;
+        }
+
+
     </script>
 </body>
 </html>
