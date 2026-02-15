@@ -234,7 +234,7 @@
         }
 
         .question-number {
-            color: #002E5D;
+            color: #FFD100;
             font-weight: 600;
             margin-bottom: 15px;
             font-size: 0.9em;
@@ -251,7 +251,7 @@
 
         .question-text {
             font-size: 1.5em;
-            color: #333;
+            color: white;
             margin-bottom: 30px;
             line-height: 1.4;
         }
@@ -786,6 +786,24 @@
             background: transparent;
             box-shadow: none;
             padding: 0;
+        }
+
+        /* Fix question text color in study mode */
+        .container.study-mode .question-text,
+        .container.study-mode .question-number,
+        .container.study-mode .question-instruction {
+            color: #AAC2DE !important;
+        }
+
+        .container.study-mode .option-label,
+        .container.study-mode label,
+        .container.study-mode .ranking-item,
+        .container.study-mode .matching-term {
+            color: #002E5D !important;
+        }
+
+        .container.study-mode .quiz-screen {
+            background: transparent;
         }
 
         #topicsBrowser h2,
