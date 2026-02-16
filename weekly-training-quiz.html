@@ -69,6 +69,12 @@
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
+        /* Make card transparent when quiz or results active */
+        .container.quiz-active .card {
+            background: transparent;
+            box-shadow: none;
+        }
+
         .setup-screen {
             text-align: center;
         }
@@ -216,6 +222,7 @@
 
         .quiz-screen {
             display: none;
+            background: transparent;
         }
 
         .progress-bar {
@@ -1488,7 +1495,7 @@
                 // Parse questions from Airtable API response
                 const allQuestions = data.records.map(record => {
                     const fields = record.fields;
-                    return {
+                    const q = {
                         question: fields.Question || '',
                         category: fields.Category || '',
                         questionType: fields.QuestionType || '',
@@ -1499,6 +1506,12 @@
                         week: fields.Week || '',  // For sorting if available
                         createdTime: record.createdTime  // Airtable creation time for consistent ordering
                     };
+                    console.log('Loaded question:', {
+                        question: q.question,
+                        category: q.category,
+                        type: q.questionType
+                    });
+                    return q;
                 });
 
                 // Sort all questions by creation time for consistent ordering
@@ -1551,6 +1564,9 @@
             setupScreen.style.display = 'none';
             quizScreen.style.display = 'block';
             
+            // Add quiz-active class to remove white card background
+            document.querySelector('.container').classList.add('quiz-active');
+            
             // Show exit button only in study mode
             const exitBtn = document.getElementById('exitQuizBtn');
             if (studyMode) {
@@ -1569,10 +1585,22 @@
             const question = questions[currentQuestionIndex];
             const progress = ((currentQuestionIndex) / questions.length) * 100;
             
+            console.log('=== SHOWING QUESTION ===');
+            console.log('Question object:', question);
+            console.log('Question text:', question.question);
+            console.log('Question type:', question.questionType);
+            
             document.getElementById('progressFill').style.width = progress + '%';
             document.getElementById('questionNumber').textContent = 
                 `Question ${currentQuestionIndex + 1} of ${questions.length} - ${question.category}`;
-            document.getElementById('questionText').textContent = question.question;
+            
+            const questionTextEl = document.getElementById('questionText');
+            questionTextEl.textContent = question.question;
+            
+            console.log('Question text element:', questionTextEl);
+            console.log('Question text set to:', questionTextEl.textContent);
+            console.log('Question text visible?', window.getComputedStyle(questionTextEl).display);
+            console.log('Question text color:', window.getComputedStyle(questionTextEl).color);
             
             // Show image if available
             const imageEl = document.getElementById('questionImage');
@@ -2586,8 +2614,9 @@
             // Show setup screen
             document.getElementById('setupScreen').style.display = 'block';
             
-            // Remove study mode class
+            // Remove study mode and quiz-active classes
             container.classList.remove('study-mode');
+            container.classList.remove('quiz-active');
             
             // Reset study mode
             studyMode = false;
@@ -2604,6 +2633,9 @@
         function exitStudyQuiz() {
             // Hide Matthew's success animation if visible
             document.getElementById('matthewSuccessContainer').classList.add('hidden');
+            
+            // Remove quiz-active class
+            document.querySelector('.container').classList.remove('quiz-active');
             
             // Hide quiz screen
             document.getElementById('quizScreen').style.display = 'none';
