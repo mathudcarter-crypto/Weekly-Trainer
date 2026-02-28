@@ -1969,12 +1969,12 @@
             }
 
             // Shuffle pairs (terms) so they appear in random order
-            const shuffledPairs = shuffleArray([...pairs]);
+            const shuffledPairs = [...pairs].sort(() => Math.random() - 0.5);
             
             const allDefinitions = shuffledPairs.map(p => p.definition);
             
             // Shuffle definitions independently so they don't match the term order
-            const shuffledDefinitions = shuffleArray([...allDefinitions]);
+            const shuffledDefinitions = [...allDefinitions].sort(() => Math.random() - 0.5);
             
             const matchingDiv = document.createElement('div');
             matchingDiv.className = 'matching-container';
