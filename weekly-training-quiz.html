@@ -1503,6 +1503,8 @@
                         wrongAnswers: fields.WrongAnswers || '',
                         image: fields.Image && fields.Image.length > 0 ? fields.Image[0].url : null,
                         notes: fields.QuestionNotes || '',
+                        notesImage: fields.NotesImage && fields.NotesImage.length > 0 ? fields.NotesImage[0].url : null,
+                        videoLink: fields.VideoLink || '',
                         week: fields.Week || '',  // For sorting if available
                         createdTime: record.createdTime  // Airtable creation time for consistent ordering
                     };
@@ -1966,16 +1968,19 @@
                 return;
             }
 
-            const allDefinitions = pairs.map(p => p.definition);
+            // Shuffle pairs (terms) so they appear in random order
+            const shuffledPairs = shuffleArray([...pairs]);
             
-            // Shuffle definitions so they don't match the term order
-            const shuffledDefinitions = [...allDefinitions].sort(() => Math.random() - 0.5);
+            const allDefinitions = shuffledPairs.map(p => p.definition);
+            
+            // Shuffle definitions independently so they don't match the term order
+            const shuffledDefinitions = shuffleArray([...allDefinitions]);
             
             const matchingDiv = document.createElement('div');
             matchingDiv.className = 'matching-container';
             matchingDiv.id = 'matchingContainer';
 
-            pairs.forEach((pair, index) => {
+            shuffledPairs.forEach((pair, index) => {
                 const rowDiv = document.createElement('div');
                 rowDiv.className = 'matching-row';
 
