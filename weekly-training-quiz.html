@@ -1979,6 +1979,8 @@
             const matchingDiv = document.createElement('div');
             matchingDiv.className = 'matching-container';
             matchingDiv.id = 'matchingContainer';
+            // Store the shuffled definition order so updateMatchingDropdowns can preserve it
+            matchingDiv.dataset.shuffledDefs = JSON.stringify(shuffledDefinitions);
 
             shuffledPairs.forEach((pair, index) => {
                 const rowDiv = document.createElement('div');
@@ -2087,14 +2089,11 @@
                     console.log('  Added clear option');
                 }
                 
-                // Add all definitions, but skip ones selected by OTHER dropdowns
-                const allSelects = document.querySelectorAll('.matching-select');
-                allSelects.forEach(otherSelect => {
-                    const def = otherSelect.dataset.correctDefinition;
-                    
-                    // Add this definition if:
-                    // 1. It's the current value of THIS dropdown, OR
-                    // 2. It's not selected in any OTHER dropdown
+                // Use the stored shuffled order from the container
+                const container = document.getElementById('matchingContainer');
+                const orderedDefs = container ? JSON.parse(container.dataset.shuffledDefs || '[]') : [];
+                
+                orderedDefs.forEach(def => {
                     const isCurrentValue = (def === savedValue);
                     const isSelectedElsewhere = selectedValues.includes(def) && !isCurrentValue;
                     
@@ -2104,14 +2103,6 @@
                         option.textContent = def;
                         option.selected = (def === savedValue);
                         select.appendChild(option);
-                        
-                        if (isCurrentValue) {
-                            console.log('  Added current:', def.substring(0, 30));
-                        } else {
-                            console.log('  Added available:', def.substring(0, 30));
-                        }
-                    } else {
-                        console.log('  Skipped (used elsewhere):', def.substring(0, 30));
                     }
                 });
             });
