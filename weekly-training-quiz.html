@@ -2578,8 +2578,6 @@ function attachDynamicGrowers() {
         ["msCorrect", "msCorrectContainer", "Correct Answer"],
         ["msWrong", "msWrongContainer", "Wrong Answer"],
         ["rankItem", "rankContainer", "Rank Item"],
-        ["matchTerm", "matchTermContainer", "Term"],
-        ["matchDef", "matchDefContainer", "Definition"]
     ].forEach(([prefix, containerId, placeholder]) => {
         const container = document.getElementById(containerId);
         if (!container) return;
@@ -2588,7 +2586,40 @@ function attachDynamicGrowers() {
         });
     });
 }
+function growMatchingRows() {
+    const container = document.getElementById("matchContainer");
+    if (!container) return;
 
+    const rows = container.querySelectorAll('[data-match-row="true"]');
+    const lastIndex = rows.length;
+    const lastTerm = document.getElementById("matchTerm" + lastIndex);
+    const lastDef = document.getElementById("matchDef" + lastIndex);
+
+    if (!lastTerm || !lastDef) return;
+
+    if (lastTerm.value.trim() !== "" || lastDef.value.trim() !== "") {
+        const next = lastIndex + 1;
+
+        const row = document.createElement("div");
+        row.setAttribute("data-match-row", "true");
+        row.style.display = "flex";
+        row.style.gap = "10px";
+        row.style.marginBottom = "10px";
+
+        row.innerHTML = `
+            <input id="matchTerm${next}" placeholder="Term ${next}"
+            style="flex:1;padding:12px;border:2px solid #002E5D;border-radius:10px;">
+
+            <input id="matchDef${next}" placeholder="Definition ${next}"
+            style="flex:2;padding:12px;border:2px solid #002E5D;border-radius:10px;">
+        `;
+
+        container.appendChild(row);
+
+        document.getElementById("matchTerm" + next).oninput = growMatchingRows;
+        document.getElementById("matchDef" + next).oninput = growMatchingRows;
+    }
+}
 function renderAnswerBuilder() {
     const type = document.getElementById("qType").value;
     const builder = document.getElementById("answerBuilder");
@@ -2629,17 +2660,23 @@ function renderAnswerBuilder() {
         html += `</div>`;
     }
 
-    if (type === "Matching") {
-        hint.innerHTML = "Enter matching pairs. Add a term and its definition. New rows appear as you continue.";
-        html += buildSectionTitle("Terms");
-        html += `<div id="matchTermContainer">`;
-        html += buildInput("matchTerm1", "Term 1");
-        html += `</div>`;
-        html += buildSectionTitle("Definitions");
-        html += `<div id="matchDefContainer">`;
-        html += buildInput("matchDef1", "Definition 1");
-        html += `</div>`;
-    }
+if (type === "Matching") {
+    hint.innerHTML = "Enter matching pairs. Each row keeps the term and definition together.";
+
+    html += `<div id="matchContainer">`;
+
+    html += `
+        <div data-match-row="true" style="display:flex; gap:10px; margin-bottom:10px;">
+            <input id="matchTerm1" placeholder="Term 1"
+            style="flex:1;padding:12px;border:2px solid #002E5D;border-radius:10px;">
+
+            <input id="matchDef1" placeholder="Definition 1"
+            style="flex:2;padding:12px;border:2px solid #002E5D;border-radius:10px;">
+        </div>
+    `;
+
+    html += `</div>`;
+}
 
     if (type === "Ranking") {
         hint.innerHTML = "Enter items in the correct order. A new row appears each time you fill the last one.";
@@ -2657,6 +2694,12 @@ function renderAnswerBuilder() {
 
     builder.innerHTML = html;
     attachDynamicGrowers();
+    if (type === "Matching") {
+    const term1 = document.getElementById("matchTerm1");
+    const def1 = document.getElementById("matchDef1");
+    if (term1) term1.oninput = growMatchingRows;
+    if (def1) def1.oninput = growMatchingRows;
+}
 }
 
 function buildAnswerPayload() {
