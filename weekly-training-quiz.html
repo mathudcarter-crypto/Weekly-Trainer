@@ -2499,97 +2499,253 @@
         function hideError() {
             errorMessage.classList.add('hidden');
         }
-        function openAdmin(){
-    const pass = prompt("Admin Password")
-    if(pass === "midwestmargin"){
-        document.getElementById("adminPanel").style.display = "block"
-        renderAnswerBuilder()
+function openAdmin() {
+    const pass = prompt("Admin Password");
+    if (pass === "midwestmargin") {
+        const panel = document.getElementById("adminPanel");
+        if (panel) {
+            panel.style.display = "block";
+            renderAnswerBuilder();
+        } else {
+            alert("adminPanel not found");
+        }
+    } else if (pass !== null) {
+        alert("Wrong password");
     }
 }
 
-function closeAdmin(){
-    document.getElementById("adminPanel").style.display="none"
+function closeAdmin() {
+    document.getElementById("adminPanel").style.display = "none";
 }
 
-function clearAdminForm(){
-    document.getElementById("qText").value=""
-    document.getElementById("topic").value=""
-    document.getElementById("subtopic").value=""
-    renderAnswerBuilder()
+function clearAdminForm() {
+    document.getElementById("qText").value = "";
+    document.getElementById("qType").value = "Multiple Choice";
+    document.getElementById("topic").value = "";
+    document.getElementById("subtopic").value = "";
+    renderAnswerBuilder();
 }
 
-function renderAnswerBuilder(){
-
-const type=document.getElementById("qType").value
-const area=document.getElementById("answerBuilder")
-const hint=document.getElementById("formatHint")
-
-let html=""
-
-if(type==="Multiple Choice"){
-hint.innerHTML="Enter one correct answer and as many wrong answers as you want."
-
-html+=`<input id="mcCorrect" placeholder="Correct Answer" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #002E5D;border-radius:10px;">`
-
-html+=`<div id="mcWrongContainer">
-<input id="mcWrong1" placeholder="Wrong Answer 1" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #002E5D;border-radius:10px;">
-</div>`
+function buildInput(id, placeholder, value = "") {
+    return `<input id="${id}" value="${escapeHtmlAttr(value)}" placeholder="${escapeHtmlAttr(placeholder)}" style="width:100%; padding:12px; border:2px solid #002E5D; border-radius:10px; box-sizing:border-box; margin-bottom:10px;">`;
 }
 
-if(type==="True/False"){
-hint.innerHTML="Choose True or False."
-
-html+=`<select id="tfCorrect" style="width:100%;padding:10px;border:2px solid #002E5D;border-radius:10px;">
-<option value="True">True</option>
-<option value="False">False</option>
-</select>`
+function buildSectionTitle(text) {
+    return `<div style="font-weight:700; color:#002E5D; margin:12px 0 8px 0;">${text}</div>`;
 }
 
-if(type==="Fill-in-Blank"){
-hint.innerHTML="Enter the exact answer."
-
-html+=`<input id="fibCorrect" placeholder="Exact Answer" style="width:100%;padding:10px;border:2px solid #002E5D;border-radius:10px;">`
+function escapeHtmlAttr(str) {
+    return String(str || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
 }
 
-area.innerHTML=html
+function getVisibleDynamicValues(prefix) {
+    const values = [];
+    let i = 1;
+    while (true) {
+        const el = document.getElementById(prefix + i);
+        if (!el) break;
+        const val = el.value.trim();
+        if (val) values.push(val);
+        i++;
+    }
+    return values;
 }
 
-async function submitQuestion(){
+function ensureNextBlank(prefix, containerId, placeholderBase) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-const type=document.getElementById("qType").value
-let correct=""
-let wrong=""
+    const inputs = container.querySelectorAll(`input[id^="${prefix}"]`);
+    if (inputs.length === 0) return;
 
-if(type==="Multiple Choice"){
-correct=document.getElementById("mcCorrect").value
-wrong=document.getElementById("mcWrong1").value
+    const last = inputs[inputs.length - 1];
+    if (last.value.trim() !== "") {
+        const nextIndex = inputs.length + 1;
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = buildInput(prefix + nextIndex, `${placeholderBase} ${nextIndex}`);
+        container.appendChild(wrapper.firstChild);
+        attachDynamicGrowers();
+    }
 }
 
-if(type==="True/False"){
-correct=document.getElementById("tfCorrect").value
+function attachDynamicGrowers() {
+    [
+        ["mcWrong", "mcWrongContainer", "Wrong Answer"],
+        ["msCorrect", "msCorrectContainer", "Correct Answer"],
+        ["msWrong", "msWrongContainer", "Wrong Answer"],
+        ["rankItem", "rankContainer", "Rank Item"],
+        ["matchTerm", "matchTermContainer", "Term"],
+        ["matchDef", "matchDefContainer", "Definition"]
+    ].forEach(([prefix, containerId, placeholder]) => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.querySelectorAll(`input[id^="${prefix}"]`).forEach(input => {
+            input.oninput = () => ensureNextBlank(prefix, containerId, placeholder);
+        });
+    });
 }
 
-if(type==="Fill-in-Blank"){
-correct=document.getElementById("fibCorrect").value
+function renderAnswerBuilder() {
+    const type = document.getElementById("qType").value;
+    const builder = document.getElementById("answerBuilder");
+    const hint = document.getElementById("formatHint");
+
+    let html = "";
+
+    if (type === "Multiple Choice") {
+        hint.innerHTML = "Enter one correct answer and as many wrong answers as you want. A new wrong-answer box appears as soon as you fill the last one.";
+        html += buildSectionTitle("Correct Answer");
+        html += buildInput("mcCorrect", "Correct Answer");
+        html += buildSectionTitle("Wrong Answers");
+        html += `<div id="mcWrongContainer">`;
+        html += buildInput("mcWrong1", "Wrong Answer 1");
+        html += `</div>`;
+    }
+
+    if (type === "True/False") {
+        hint.innerHTML = "Choose whether the correct answer is True or False. WrongAnswer will be left blank automatically.";
+        html += buildSectionTitle("Correct Answer");
+        html += `
+            <select id="tfCorrect" style="width:100%; padding:12px; border:2px solid #002E5D; border-radius:10px; box-sizing:border-box; margin-bottom:10px;">
+                <option value="True">True</option>
+                <option value="False">False</option>
+            </select>
+        `;
+    }
+
+    if (type === "Multiple Select") {
+        hint.innerHTML = "Enter all correct choices and all wrong choices. Each side grows automatically as you fill the last visible box.";
+        html += buildSectionTitle("Correct Answers");
+        html += `<div id="msCorrectContainer">`;
+        html += buildInput("msCorrect1", "Correct Answer 1");
+        html += `</div>`;
+        html += buildSectionTitle("Wrong Answers");
+        html += `<div id="msWrongContainer">`;
+        html += buildInput("msWrong1", "Wrong Answer 1");
+        html += `</div>`;
+    }
+
+    if (type === "Matching") {
+        hint.innerHTML = "Enter matching pairs. Add a term and its definition. New rows appear as you continue.";
+        html += buildSectionTitle("Terms");
+        html += `<div id="matchTermContainer">`;
+        html += buildInput("matchTerm1", "Term 1");
+        html += `</div>`;
+        html += buildSectionTitle("Definitions");
+        html += `<div id="matchDefContainer">`;
+        html += buildInput("matchDef1", "Definition 1");
+        html += `</div>`;
+    }
+
+    if (type === "Ranking") {
+        hint.innerHTML = "Enter items in the correct order. A new row appears each time you fill the last one.";
+        html += buildSectionTitle("Correct Order");
+        html += `<div id="rankContainer">`;
+        html += buildInput("rankItem1", "Rank Item 1");
+        html += `</div>`;
+    }
+
+    if (type === "Fill-in-Blank") {
+        hint.innerHTML = "Enter the exact answer. WrongAnswer will be left blank automatically.";
+        html += buildSectionTitle("Exact Answer");
+        html += buildInput("fibCorrect", "Exact Answer");
+    }
+
+    builder.innerHTML = html;
+    attachDynamicGrowers();
 }
 
-const body={
-Question:document.getElementById("qText").value,
-QuestionType:type,
-CorrectAnswer:correct,
-WrongAnswer:wrong,
-Topic:document.getElementById("topic").value,
-Subtopic:document.getElementById("subtopic").value
+function buildAnswerPayload() {
+    const type = document.getElementById("qType").value;
+    let correctAnswer = "";
+    let wrongAnswer = "";
+
+    if (type === "Multiple Choice") {
+        correctAnswer = (document.getElementById("mcCorrect")?.value || "").trim();
+        wrongAnswer = getVisibleDynamicValues("mcWrong").join("|");
+    }
+
+    if (type === "True/False") {
+        correctAnswer = document.getElementById("tfCorrect")?.value || "";
+        wrongAnswer = "";
+    }
+
+    if (type === "Multiple Select") {
+        correctAnswer = getVisibleDynamicValues("msCorrect").join("|");
+        wrongAnswer = getVisibleDynamicValues("msWrong").join("|");
+    }
+
+    if (type === "Matching") {
+        const terms = getVisibleDynamicValues("matchTerm");
+        const defs = getVisibleDynamicValues("matchDef");
+        const pairCount = Math.min(terms.length, defs.length);
+        const pairs = [];
+        for (let i = 0; i < pairCount; i++) {
+            pairs.push(`${terms[i]}=${defs[i]}`);
+        }
+        correctAnswer = pairs.join("|");
+        wrongAnswer = "";
+    }
+
+    if (type === "Ranking") {
+        correctAnswer = getVisibleDynamicValues("rankItem").join("|");
+        wrongAnswer = "";
+    }
+
+    if (type === "Fill-in-Blank") {
+        correctAnswer = (document.getElementById("fibCorrect")?.value || "").trim();
+        wrongAnswer = "";
+    }
+
+    return { correctAnswer, wrongAnswer };
 }
 
-await fetch("https://tight-waterfall-1040.mathudcarter.workers.dev/api/quiz/add-question",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify(body)
-})
+async function submitQuestion() {
+    const question = document.getElementById("qText").value.trim();
+    const questionType = document.getElementById("qType").value;
+    const topic = document.getElementById("topic").value.trim();
+    const subtopic = document.getElementById("subtopic").value.trim();
+    const { correctAnswer, wrongAnswer } = buildAnswerPayload();
 
-alert("Question Added")
-clearAdminForm()
+    if (!question) {
+        alert("Please enter a question.");
+        return;
+    }
+
+    if (!correctAnswer) {
+        alert("Please complete the answer fields.");
+        return;
+    }
+
+    const body = {
+        Question: question,
+        QuestionType: questionType,
+        CorrectAnswer: correctAnswer,
+        WrongAnswer: wrongAnswer,
+        Topic: topic,
+        Subtopic: subtopic
+    };
+
+    const res = await fetch("https://tight-waterfall-1040.mathudcarter.workers.dev/api/quiz/add-question", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+        console.error(data);
+        alert("Question failed to save.");
+        return;
+    }
+
+    alert("Question added.");
+    clearAdminForm();
 }
 
         // ==========================================
