@@ -1718,9 +1718,7 @@
             });
 
             container.appendChild(rankingDiv);
-<button onclick="generateAI()" style="background:#FFD100;color:#002E5D;border:none;padding:12px 18px;border-radius:10px;font-weight:700;">
-Generate AI Question
-</button>
+
             // Add submit button
             const submitBtn = document.createElement('button');
             submitBtn.className = 'btn';
@@ -3349,6 +3347,7 @@ document.getElementById("fibCorrect").value = data.CorrectAnswer
     <div id="answerBuilder"></div>
 
     <div style="margin-top:20px;">
+        <button onclick="generateAI()">Generate AI Question</button>
       <button onclick="submitQuestion()" style="background:#FFD100;color:#002E5D;border:none;padding:12px 18px;border-radius:10px;font-weight:700;">Submit Question</button>
       <button onclick="clearAdminForm()" style="background:#002E5D;color:#fff;border:none;padding:12px 18px;border-radius:10px;font-weight:700;">Clear</button>
     </div>
