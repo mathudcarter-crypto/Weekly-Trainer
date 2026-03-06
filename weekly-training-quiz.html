@@ -2499,30 +2499,87 @@
         function hideError() {
             errorMessage.classList.add('hidden');
         }
-        function openAdmin() {
-    const pass = prompt("Admin Password");
-
-    if (pass === "midwestmargin") {
-        const panel = document.getElementById("adminPanel");
-        if (panel) {
-            panel.style.display = "block";
-        } else {
-            alert("adminPanel not found");
-        }
-    } else if (pass !== null) {
-        alert("Wrong password");
+        function openAdmin(){
+    const pass = prompt("Admin Password")
+    if(pass === "midwestmargin"){
+        document.getElementById("adminPanel").style.display = "block"
+        renderAnswerBuilder()
     }
+}
+
+function closeAdmin(){
+    document.getElementById("adminPanel").style.display="none"
+}
+
+function clearAdminForm(){
+    document.getElementById("qText").value=""
+    document.getElementById("topic").value=""
+    document.getElementById("subtopic").value=""
+    renderAnswerBuilder()
+}
+
+function renderAnswerBuilder(){
+
+const type=document.getElementById("qType").value
+const area=document.getElementById("answerBuilder")
+const hint=document.getElementById("formatHint")
+
+let html=""
+
+if(type==="Multiple Choice"){
+hint.innerHTML="Enter one correct answer and as many wrong answers as you want."
+
+html+=`<input id="mcCorrect" placeholder="Correct Answer" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #002E5D;border-radius:10px;">`
+
+html+=`<div id="mcWrongContainer">
+<input id="mcWrong1" placeholder="Wrong Answer 1" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #002E5D;border-radius:10px;">
+</div>`
+}
+
+if(type==="True/False"){
+hint.innerHTML="Choose True or False."
+
+html+=`<select id="tfCorrect" style="width:100%;padding:10px;border:2px solid #002E5D;border-radius:10px;">
+<option value="True">True</option>
+<option value="False">False</option>
+</select>`
+}
+
+if(type==="Fill-in-Blank"){
+hint.innerHTML="Enter the exact answer."
+
+html+=`<input id="fibCorrect" placeholder="Exact Answer" style="width:100%;padding:10px;border:2px solid #002E5D;border-radius:10px;">`
+}
+
+area.innerHTML=html
 }
 
 async function submitQuestion(){
 
-const body = {
-Question: document.getElementById("qText").value,
-QuestionType: document.getElementById("qType").value,
-CorrectAnswer: document.getElementById("correctAnswer").value,
-WrongAnswer: document.getElementById("wrongAnswer").value,
-Topic: document.getElementById("topic").value,
-Subtopic: document.getElementById("subtopic").value
+const type=document.getElementById("qType").value
+let correct=""
+let wrong=""
+
+if(type==="Multiple Choice"){
+correct=document.getElementById("mcCorrect").value
+wrong=document.getElementById("mcWrong1").value
+}
+
+if(type==="True/False"){
+correct=document.getElementById("tfCorrect").value
+}
+
+if(type==="Fill-in-Blank"){
+correct=document.getElementById("fibCorrect").value
+}
+
+const body={
+Question:document.getElementById("qText").value,
+QuestionType:type,
+CorrectAnswer:correct,
+WrongAnswer:wrong,
+Topic:document.getElementById("topic").value,
+Subtopic:document.getElementById("subtopic").value
 }
 
 await fetch("https://tight-waterfall-1040.mathudcarter.workers.dev/api/quiz/add-question",{
@@ -2532,7 +2589,7 @@ body:JSON.stringify(body)
 })
 
 alert("Question Added")
-
+clearAdminForm()
 }
 
         // ==========================================
@@ -2983,34 +3040,56 @@ alert("Question Added")
 
 
     </script>
-   <div id="adminPanel" style="display:none; position:fixed; top:70px; left:20px; right:20px; z-index:9999; background:#111; border:2px solid #00ff9d; padding:25px; max-height:80vh; overflow:auto;">
+<div id="adminPanel" style="display:none; position:fixed; top:70px; left:20px; right:20px; z-index:9999; background:#ffffff; border:4px solid #FFD100; border-radius:16px; box-shadow:0 12px 40px rgba(0,0,0,0.45); max-height:85vh; overflow:auto;">
 
-<h2>Create Question</h2>
+  <div style="background:#002E5D; color:#fff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
+    <div style="font-size:22px; font-weight:700;">Quiz Admin</div>
+    <button onclick="closeAdmin()" style="background:#FFD100; color:#002E5D; border:none; padding:8px 14px; border-radius:8px; font-weight:700; cursor:pointer;">Close</button>
+  </div>
 
-<input id="qText" placeholder="Question" style="width:100%;margin:5px 0;padding:10px;display:block;">
+  <div style="padding:20px; color:#002E5D;">
 
-<select id="qType" style="width:100%;margin:5px 0;padding:10px;display:block;">
-<option>Multiple Choice</option>
-<option>True/False</option>
-<option>Multiple Select</option>
-<option>Matching</option>
-<option>Ranking</option>
-<option>Fill-in-Blank</option>
-</select>
+    <div style="margin-bottom:14px;">
+      <label style="font-weight:700;">Question</label>
+      <textarea id="qText" placeholder="Enter the question"
+        style="width:100%;min-height:90px;padding:12px;border:2px solid #002E5D;border-radius:10px;"></textarea>
+    </div>
 
-<input id="correctAnswer" placeholder="Correct Answer" style="width:100%;margin:5px 0;padding:10px;display:block;">
+    <div style="margin-bottom:14px;">
+      <label style="font-weight:700;">Question Type</label>
+      <select id="qType" onchange="renderAnswerBuilder()"
+        style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;">
+        <option value="Multiple Choice">Multiple Choice</option>
+        <option value="True/False">True/False</option>
+        <option value="Multiple Select">Multiple Select</option>
+        <option value="Matching">Matching</option>
+        <option value="Ranking">Ranking</option>
+        <option value="Fill-in-Blank">Fill-in-Blank</option>
+      </select>
+    </div>
 
-<input id="wrongAnswer" placeholder="Wrong Answers" style="width:100%;margin:5px 0;padding:10px;display:block;">
+    <div style="margin-bottom:14px;">
+      <label style="font-weight:700;">Topic</label>
+      <input id="topic" placeholder="Topic"
+        style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;">
+    </div>
 
-<input id="topic" placeholder="Topic" style="width:100%;margin:5px 0;padding:10px;display:block;">
+    <div style="margin-bottom:18px;">
+      <label style="font-weight:700;">Subtopic</label>
+      <input id="subtopic" placeholder="Subtopic"
+        style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;">
+    </div>
 
-<input id="subtopic" placeholder="Subtopic" style="width:100%;margin:5px 0;padding:10px;display:block;">
+    <div id="formatHint" style="background:#f5f7fb;border-left:6px solid #FFD100;padding:12px;margin-bottom:18px;"></div>
 
-<div style="margin-top:10px;">
-<button onclick="submitQuestion()">Submit</button>
-<button onclick="document.getElementById('adminPanel').style.display='none'">Close</button>
-</div>
+    <div id="answerBuilder"></div>
 
+    <div style="margin-top:20px;">
+      <button onclick="submitQuestion()" style="background:#FFD100;color:#002E5D;border:none;padding:12px 18px;border-radius:10px;font-weight:700;">Submit Question</button>
+      <button onclick="clearAdminForm()" style="background:#002E5D;color:#fff;border:none;padding:12px 18px;border-radius:10px;font-weight:700;">Clear</button>
+    </div>
+
+  </div>
 </div>
 </body>
 </html>
