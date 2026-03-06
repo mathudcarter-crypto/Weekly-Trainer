@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weekly Test</title>
+<div style="position:absolute;top:15px;right:20px;font-size:22px;cursor:pointer" onclick="openAdmin()">
+⚙
+</div>
     
     <!-- PWA Meta Tags for Home Screen -->
     <meta name="application-name" content="Weekly Test">
@@ -2496,6 +2499,36 @@
         function hideError() {
             errorMessage.classList.add('hidden');
         }
+        function openAdmin(){
+
+const pass = prompt("Admin Password")
+
+if(pass === "midwestmargin"){
+document.getElementById("adminPanel").style.display = "block"
+}
+
+}
+
+async function submitQuestion(){
+
+const body = {
+Question: document.getElementById("qText").value,
+QuestionType: document.getElementById("qType").value,
+CorrectAnswer: document.getElementById("correctAnswer").value,
+WrongAnswer: document.getElementById("wrongAnswer").value,
+Topic: document.getElementById("topic").value,
+Subtopic: document.getElementById("subtopic").value
+}
+
+await fetch("https://tight-waterfall-1040.mathudcarter.workers.dev/api/quiz/add-question",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify(body)
+})
+
+alert("Question Added")
+
+}
 
         // ==========================================
         // PWA - HOME SCREEN ICONS & MANIFEST
@@ -2945,5 +2978,34 @@
 
 
     </script>
+    <div id="adminPanel" style="display:none;background:#111;padding:25px">
+
+<h2>Create Question</h2>
+
+<input id="qText" placeholder="Question" style="width:100%;margin:5px">
+
+<select id="qType">
+<option>Multiple Choice</option>
+<option>True/False</option>
+<option>Multiple Select</option>
+<option>Matching</option>
+<option>Ranking</option>
+<option>Fill-in-Blank</option>
+</select>
+
+<input id="correctAnswer" placeholder="Correct Answer">
+
+<input id="wrongAnswer" placeholder="Wrong Answers">
+
+<input id="topic" placeholder="Topic">
+
+<input id="subtopic" placeholder="Subtopic">
+
+<br><br>
+
+<button onclick="generateAI()">Generate AI Question</button>
+<button onclick="submitQuestion()">Submit</button>
+
+</div>
 </body>
 </html>
