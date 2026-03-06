@@ -2499,14 +2499,19 @@
         function hideError() {
             errorMessage.classList.add('hidden');
         }
-        function openAdmin(){
+        function openAdmin() {
+    const pass = prompt("Admin Password");
 
-const pass = prompt("Admin Password")
-
-if(pass === "midwestmargin"){
-document.getElementById("adminPanel").style.display = "block"
-}
-
+    if (pass === "midwestmargin") {
+        const panel = document.getElementById("adminPanel");
+        if (panel) {
+            panel.style.display = "block";
+        } else {
+            alert("adminPanel not found");
+        }
+    } else if (pass !== null) {
+        alert("Wrong password");
+    }
 }
 
 async function submitQuestion(){
@@ -2978,13 +2983,13 @@ alert("Question Added")
 
 
     </script>
-    <div id="adminPanel" style="display:none;background:#111;padding:25px">
+   <div id="adminPanel" style="display:none; position:fixed; top:70px; left:20px; right:20px; z-index:9999; background:#111; border:2px solid #00ff9d; padding:25px; max-height:80vh; overflow:auto;">
 
 <h2>Create Question</h2>
 
-<input id="qText" placeholder="Question" style="width:100%;margin:5px">
+<input id="qText" placeholder="Question" style="width:100%;margin:5px 0;padding:10px;display:block;">
 
-<select id="qType">
+<select id="qType" style="width:100%;margin:5px 0;padding:10px;display:block;">
 <option>Multiple Choice</option>
 <option>True/False</option>
 <option>Multiple Select</option>
@@ -2993,18 +2998,18 @@ alert("Question Added")
 <option>Fill-in-Blank</option>
 </select>
 
-<input id="correctAnswer" placeholder="Correct Answer">
+<input id="correctAnswer" placeholder="Correct Answer" style="width:100%;margin:5px 0;padding:10px;display:block;">
 
-<input id="wrongAnswer" placeholder="Wrong Answers">
+<input id="wrongAnswer" placeholder="Wrong Answers" style="width:100%;margin:5px 0;padding:10px;display:block;">
 
-<input id="topic" placeholder="Topic">
+<input id="topic" placeholder="Topic" style="width:100%;margin:5px 0;padding:10px;display:block;">
 
-<input id="subtopic" placeholder="Subtopic">
+<input id="subtopic" placeholder="Subtopic" style="width:100%;margin:5px 0;padding:10px;display:block;">
 
-<br><br>
-
-<button onclick="generateAI()">Generate AI Question</button>
+<div style="margin-top:10px;">
 <button onclick="submitQuestion()">Submit</button>
+<button onclick="document.getElementById('adminPanel').style.display='none'">Close</button>
+</div>
 
 </div>
 </body>
