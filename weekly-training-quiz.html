@@ -3394,16 +3394,18 @@ document.getElementById("fibCorrect").value = data.CorrectAnswer
 
     <div style="margin-bottom:14px;">
       <label style="font-weight:700;">Topic</label>
-      <input id="topic" list="topicOptions" placeholder="Topic" oninput="populateAdminSubtopicOptions()"
-        style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;">
-      <datalist id="topicOptions"></datalist>
+      <select id="topic" onchange="populateAdminSubtopicOptions()"
+        style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;background:#fff;">
+        <option value="">Select Topic</option>
+      </select>
     </div>
 
     <div style="margin-bottom:18px;">
       <label style="font-weight:700;">Subtopic</label>
-      <input id="subtopic" list="subtopicOptions" placeholder="Subtopic"
-        style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;">
-      <datalist id="subtopicOptions"></datalist>
+      <select id="subtopic"
+        style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;background:#fff;">
+        <option value="">Select Subtopic</option>
+      </select>
     </div>
 
     <div id="formatHint" style="background:#f5f7fb;border-left:6px solid #FFD100;padding:12px;margin-bottom:18px;"></div>
