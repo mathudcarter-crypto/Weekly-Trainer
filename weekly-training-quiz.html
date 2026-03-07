@@ -1166,7 +1166,7 @@
         // CONFIGURATION
         // ==========================================
         const CONFIG = {
-            workerUrl: 'https://tight-waterfall-1040.mathudcarter.workers.dev'
+            workerUrl: 'https://weekly-trainer-worker.mathudcarter.workers.dev'
         };
 
         // ==========================================
@@ -2773,7 +2773,7 @@ async function submitQuestion() {
         Subtopic: subtopic
     };
 
-    const res = await fetch("https://tight-waterfall-1040.mathudcarter.workers.dev/api/quiz/add-question", {
+    const res = await fetch("https://weekly-trainer-worker.mathudcarter.workers.dev/api/quiz/add-question", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
@@ -2798,7 +2798,7 @@ const prompt = promptUser()
 if(!prompt) return
 
 const res = await fetch(
-"https://tight-waterfall-1040.mathudcarter.workers.dev/api/quiz/generate-question",
+"https://weekly-trainer-worker.mathudcarter.workers.dev/api/quiz/generate-question",
 {
 method:"POST",
 headers:{"Content-Type":"application/json"},
