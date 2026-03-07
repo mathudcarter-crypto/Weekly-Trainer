@@ -3426,7 +3426,85 @@ function fillGeneratedAnswers(data) {
     style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;">
   <datalist id="subtopicOptions"></datalist>
 </div>
+/* ==============================
+   ADMIN TOPIC / SUBTOPIC LOADER
+============================== */
 
+let adminTopicMap = {};
+
+async function loadAdminTopicOptions() {
+
+  try {
+
+    const res = await fetch(
+      "https://weekly-trainer-worker.mathudcarter.workers.dev/api/quiz/study-questions"
+    );
+
+    const data = await res.json();
+
+    if (!res.ok || !data.records) {
+      console.error("Topic load failed", data);
+      return;
+    }
+
+    adminTopicMap = {};
+
+    data.records.forEach(record => {
+
+      const topic = (record.fields.Topic || "").trim();
+      const subtopic = (record.fields.Subtopic || "").trim();
+
+      if (!topic) return;
+
+      if (!adminTopicMap[topic]) {
+        adminTopicMap[topic] = new Set();
+      }
+
+      if (subtopic) {
+        adminTopicMap[topic].add(subtopic);
+      }
+
+    });
+
+    const topicList = document.getElementById("topicOptions");
+
+    if (topicList) {
+
+      topicList.innerHTML = Object.keys(adminTopicMap)
+        .sort()
+        .map(t => `<option value="${t}">`)
+        .join("");
+
+    }
+
+    populateAdminSubtopicOptions();
+
+  } catch (err) {
+
+    console.error("Topic loader error", err);
+
+  }
+
+}
+
+
+function populateAdminSubtopicOptions() {
+
+  const topic = (document.getElementById("topic").value || "").trim();
+  const subList = document.getElementById("subtopicOptions");
+
+  if (!subList) return;
+
+  const subs = topic && adminTopicMap[topic]
+    ? Array.from(adminTopicMap[topic])
+    : [];
+
+  subList.innerHTML = subs
+    .sort()
+    .map(s => `<option value="${s}">`)
+    .join("");
+
+}
     <div id="formatHint" style="background:#f5f7fb;border-left:6px solid #FFD100;padding:12px;margin-bottom:18px;"></div>
 
     <div id="answerBuilder"></div>
