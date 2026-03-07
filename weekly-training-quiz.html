@@ -1210,40 +1210,42 @@
         // ==========================================
 
         let adminTopicMap = {};
+        let adminTopicList = [];
+        let adminSubtopicList = [];
 
         async function loadAdminTopicOptions() {
             try {
-                const res = await fetch("https://weekly-trainer-worker.mathudcarter.workers.dev/api/quiz/study-questions");
+                const res = await fetch(`${CONFIG.workerUrl}/api/quiz/topic-options`);
                 const data = await res.json();
 
-                if (!res.ok || !data.records) {
-                    console.error("Topic load failed", data);
+                if (!res.ok) {
+                    console.error("Topic options load failed", data);
                     return;
                 }
 
                 adminTopicMap = {};
+                adminTopicList = Array.isArray(data.topics) ? data.topics : [];
+                adminSubtopicList = Array.isArray(data.subtopics) ? data.subtopics : [];
 
-                data.records.forEach(record => {
-                    const topic = (record.fields.Topic || "").trim();
-                    const subtopic = (record.fields.Subtopic || "").trim();
+                const topicSelect = document.getElementById("topic");
+                const subtopicSelect = document.getElementById("subtopic");
 
-                    if (!topic) return;
-
-                    if (!adminTopicMap[topic]) {
-                        adminTopicMap[topic] = new Set();
-                    }
-
-                    if (subtopic) {
-                        adminTopicMap[topic].add(subtopic);
-                    }
-                });
-
-                const topicList = document.getElementById("topicOptions");
-                if (topicList) {
-                    topicList.innerHTML = Object.keys(adminTopicMap)
-                        .sort()
-                        .map(t => `<option value="${t}">`)
+                if (topicSelect) {
+                    topicSelect.innerHTML = ['<option value="">Select Topic</option>']
+                        .concat(adminTopicList.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`))
                         .join("");
+                }
+
+                if (Array.isArray(data.topicMap)) {
+                    data.topicMap.forEach(item => {
+                        if (item && item.topic) {
+                            adminTopicMap[item.topic] = new Set(item.subtopics || []);
+                        }
+                    });
+                }
+
+                if (subtopicSelect) {
+                    subtopicSelect.innerHTML = '<option value="">Select Subtopic</option>';
                 }
 
                 populateAdminSubtopicOptions();
@@ -1254,19 +1256,36 @@
 
         function populateAdminSubtopicOptions() {
             const topicEl = document.getElementById("topic");
-            const subList = document.getElementById("subtopicOptions");
+            const subSelect = document.getElementById("subtopic");
 
-            if (!topicEl || !subList) return;
+            if (!topicEl || !subSelect) return;
 
-            const topic = (topicEl.value || "").trim();
-            const subs = topic && adminTopicMap[topic]
-                ? Array.from(adminTopicMap[topic])
-                : [];
+            const selectedTopic = (topicEl.value || "").trim();
 
-            subList.innerHTML = subs
-                .sort()
-                .map(s => `<option value="${s}">`)
+            let subs = [];
+            if (selectedTopic && adminTopicMap[selectedTopic] && adminTopicMap[selectedTopic].size) {
+                subs = Array.from(adminTopicMap[selectedTopic]);
+            } else {
+                subs = adminSubtopicList.slice();
+            }
+
+            const currentValue = subSelect.value || "";
+            subSelect.innerHTML = ['<option value="">Select Subtopic</option>']
+                .concat(subs.sort().map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`))
                 .join("");
+
+            if (currentValue && subs.includes(currentValue)) {
+                subSelect.value = currentValue;
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
         }
 
         function validateSetupForm() {
@@ -3395,7 +3414,7 @@ document.getElementById("fibCorrect").value = data.CorrectAnswer
     <div style="margin-bottom:14px;">
       <label style="font-weight:700;">Topic</label>
       <select id="topic" onchange="populateAdminSubtopicOptions()"
-        style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;background:#fff;">
+        style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;">
         <option value="">Select Topic</option>
       </select>
     </div>
@@ -3403,7 +3422,7 @@ document.getElementById("fibCorrect").value = data.CorrectAnswer
     <div style="margin-bottom:18px;">
       <label style="font-weight:700;">Subtopic</label>
       <select id="subtopic"
-        style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;background:#fff;">
+        style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;">
         <option value="">Select Subtopic</option>
       </select>
     </div>
