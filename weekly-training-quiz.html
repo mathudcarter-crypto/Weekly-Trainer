@@ -1202,11 +1202,73 @@
             }
             console.log('About to call loadStores()');
             loadStores();  // Load store list from Airtable
+            loadAdminTopicOptions();
         });
 
         // ==========================================
         // VALIDATE SETUP FORM
         // ==========================================
+
+        let adminTopicMap = {};
+
+        async function loadAdminTopicOptions() {
+            try {
+                const res = await fetch("https://weekly-trainer-worker.mathudcarter.workers.dev/api/quiz/study-questions");
+                const data = await res.json();
+
+                if (!res.ok || !data.records) {
+                    console.error("Topic load failed", data);
+                    return;
+                }
+
+                adminTopicMap = {};
+
+                data.records.forEach(record => {
+                    const topic = (record.fields.Topic || "").trim();
+                    const subtopic = (record.fields.Subtopic || "").trim();
+
+                    if (!topic) return;
+
+                    if (!adminTopicMap[topic]) {
+                        adminTopicMap[topic] = new Set();
+                    }
+
+                    if (subtopic) {
+                        adminTopicMap[topic].add(subtopic);
+                    }
+                });
+
+                const topicList = document.getElementById("topicOptions");
+                if (topicList) {
+                    topicList.innerHTML = Object.keys(adminTopicMap)
+                        .sort()
+                        .map(t => `<option value="${t}">`)
+                        .join("");
+                }
+
+                populateAdminSubtopicOptions();
+            } catch (err) {
+                console.error("Topic loader error", err);
+            }
+        }
+
+        function populateAdminSubtopicOptions() {
+            const topicEl = document.getElementById("topic");
+            const subList = document.getElementById("subtopicOptions");
+
+            if (!topicEl || !subList) return;
+
+            const topic = (topicEl.value || "").trim();
+            const subs = topic && adminTopicMap[topic]
+                ? Array.from(adminTopicMap[topic])
+                : [];
+
+            subList.innerHTML = subs
+                .sort()
+                .map(s => `<option value="${s}">`)
+                .join("");
+        }
+
         function validateSetupForm() {
             userName = document.getElementById('userName').value.trim();
             const storeHiddenInput = document.getElementById('storeName');
@@ -2787,154 +2849,72 @@ async function submitQuestion() {
         return;
     }
 
+   await loadAdminTopicOptions();
    alert("Question added.");
 clearAdminForm();
 }
-async function generateAI() {
-    const prompt = promptUser();
-    if (!prompt) return;
 
-    const res = await fetch(
-        "https://weekly-trainer-worker.mathudcarter.workers.dev/api/quiz/generate-question",
-        {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt })
-        }
-    );
+async function generateAI(){
 
-    const data = await res.json();
+const prompt = promptUser()
 
-    if (!res.ok || data.error) {
-        console.error(data);
-        alert(data.message || data.error || "AI generation failed.");
-        return;
-    }
+if(!prompt) return
 
-    document.getElementById("qText").value = data.Question || "";
-    document.getElementById("qType").value = data.QuestionType || "Multiple Choice";
+const res = await fetch(
+"https://weekly-trainer-worker.mathudcarter.workers.dev/api/quiz/generate-question",
+{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({prompt})
+})
 
-    renderAnswerBuilder();
+const data = await res.json()
 
-    setTimeout(() => {
-        fillGeneratedAnswers(data);
-    }, 50);
+if(data.error){
+alert(data.error)
+return
 }
 
-function promptUser() {
-    return window.prompt("Describe the question you want AI to generate:");
+document.getElementById("qText").value = data.Question || ""
+document.getElementById("qType").value = data.QuestionType || "Multiple Choice"
+
+renderAnswerBuilder()
+
+setTimeout(()=>{
+fillGeneratedAnswers(data)
+},50)
+
 }
 
-function fillGeneratedAnswers(data) {
-    const type = data.QuestionType || "";
-
-    function fillDynamicList(prefix, values) {
-        values.forEach((value, i) => {
-            const id = prefix + (i + 1);
-            let el = document.getElementById(id);
-
-            if (!el) {
-                const prev = document.getElementById(prefix + i);
-                if (prev) {
-                    prev.value = prev.value || "";
-                    prev.dispatchEvent(new Event("input", { bubbles: true }));
-                }
-                el = document.getElementById(id);
-            }
-
-            if (el) {
-                el.value = value;
-                el.dispatchEvent(new Event("input", { bubbles: true }));
-            }
-        });
-    }
-
-    if (type === "Multiple Choice") {
-        const mcCorrect = document.getElementById("mcCorrect");
-        if (mcCorrect) mcCorrect.value = data.CorrectAnswer || "";
-
-        const wrongs = String(data.WrongAnswer || "")
-            .split("|")
-            .map(x => x.trim())
-            .filter(Boolean);
-
-        fillDynamicList("mcWrong", wrongs);
-    }
-
-    if (type === "True/False") {
-        const tfCorrect = document.getElementById("tfCorrect");
-        if (tfCorrect) {
-            tfCorrect.value = String(data.CorrectAnswer || "").trim() === "False" ? "False" : "True";
-        }
-    }
-
-    if (type === "Multiple Select") {
-        const corrects = String(data.CorrectAnswer || "")
-            .split("|")
-            .map(x => x.trim())
-            .filter(Boolean);
-
-        const wrongs = String(data.WrongAnswer || "")
-            .split("|")
-            .map(x => x.trim())
-            .filter(Boolean);
-
-        fillDynamicList("msCorrect", corrects);
-        fillDynamicList("msWrong", wrongs);
-    }
-
-    if (type === "Matching") {
-        const pairs = String(data.CorrectAnswer || "")
-            .split("|")
-            .map(x => x.trim())
-            .filter(Boolean);
-
-        pairs.forEach((pair, i) => {
-            const [termRaw, ...defParts] = pair.split("=");
-            const term = (termRaw || "").trim();
-            const def = defParts.join("=").trim();
-
-            const rowIndex = i + 1;
-
-            let termEl = document.getElementById("matchTerm" + rowIndex);
-            let defEl = document.getElementById("matchDef" + rowIndex);
-
-            if (!termEl || !defEl) {
-                const prevTerm = document.getElementById("matchTerm" + i);
-                const prevDef = document.getElementById("matchDef" + i);
-
-                if (prevTerm && prevDef) {
-                    prevTerm.dispatchEvent(new Event("input", { bubbles: true }));
-                    prevDef.dispatchEvent(new Event("input", { bubbles: true }));
-                }
-
-                termEl = document.getElementById("matchTerm" + rowIndex);
-                defEl = document.getElementById("matchDef" + rowIndex);
-            }
-
-            if (termEl) termEl.value = term;
-            if (defEl) defEl.value = def;
-
-            if (termEl) termEl.dispatchEvent(new Event("input", { bubbles: true }));
-            if (defEl) defEl.dispatchEvent(new Event("input", { bubbles: true }));
-        });
-    }
-
-    if (type === "Ranking") {
-        const items = String(data.CorrectAnswer || "")
-            .split("|")
-            .map(x => x.trim())
-            .filter(Boolean);
-
-        fillDynamicList("rankItem", items);
-    }
-
-    if (type === "Fill-in-Blank") {
-        const fibCorrect = document.getElementById("fibCorrect");
-        if (fibCorrect) fibCorrect.value = data.CorrectAnswer || "";
-    }
+function promptUser(){
+return window.prompt("Describe the question you want AI to generate:")
 }
 
+function fillGeneratedAnswers(data){
+
+const type = data.QuestionType
+
+if(type==="Multiple Choice"){
+document.getElementById("mcCorrect").value = data.CorrectAnswer || ""
+
+const wrongs = (data.WrongAnswer||"").split("|")
+
+wrongs.forEach((w,i)=>{
+const id="mcWrong"+(i+1)
+const el=document.getElementById(id)
+if(el) el.value=w
+})
+}
+
+if(type==="True/False"){
+document.getElementById("tfCorrect").value = data.CorrectAnswer
+}
+
+if(type==="Fill-in-Blank"){
+document.getElementById("fibCorrect").value = data.CorrectAnswer
+}
+
+}
 
         // ==========================================
         // PWA - HOME SCREEN ICONS & MANIFEST
@@ -3412,99 +3392,20 @@ function fillGeneratedAnswers(data) {
       </select>
     </div>
 
-<div style="margin-bottom:14px;">
-  <label style="font-weight:700;">Topic</label>
-  <input id="topic" list="topicOptions" placeholder="Topic"
-    oninput="populateAdminSubtopicOptions()"
-    style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;">
-  <datalist id="topicOptions"></datalist>
-</div>
+    <div style="margin-bottom:14px;">
+      <label style="font-weight:700;">Topic</label>
+      <input id="topic" list="topicOptions" placeholder="Topic" oninput="populateAdminSubtopicOptions()"
+        style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;">
+      <datalist id="topicOptions"></datalist>
+    </div>
 
-<div style="margin-bottom:18px;">
-  <label style="font-weight:700;">Subtopic</label>
-  <input id="subtopic" list="subtopicOptions" placeholder="Subtopic"
-    style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;">
-  <datalist id="subtopicOptions"></datalist>
-</div>
-/* ==============================
-   ADMIN TOPIC / SUBTOPIC LOADER
-============================== */
+    <div style="margin-bottom:18px;">
+      <label style="font-weight:700;">Subtopic</label>
+      <input id="subtopic" list="subtopicOptions" placeholder="Subtopic"
+        style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;">
+      <datalist id="subtopicOptions"></datalist>
+    </div>
 
-let adminTopicMap = {};
-
-async function loadAdminTopicOptions() {
-
-  try {
-
-    const res = await fetch(
-      "https://weekly-trainer-worker.mathudcarter.workers.dev/api/quiz/study-questions"
-    );
-
-    const data = await res.json();
-
-    if (!res.ok || !data.records) {
-      console.error("Topic load failed", data);
-      return;
-    }
-
-    adminTopicMap = {};
-
-    data.records.forEach(record => {
-
-      const topic = (record.fields.Topic || "").trim();
-      const subtopic = (record.fields.Subtopic || "").trim();
-
-      if (!topic) return;
-
-      if (!adminTopicMap[topic]) {
-        adminTopicMap[topic] = new Set();
-      }
-
-      if (subtopic) {
-        adminTopicMap[topic].add(subtopic);
-      }
-
-    });
-
-    const topicList = document.getElementById("topicOptions");
-
-    if (topicList) {
-
-      topicList.innerHTML = Object.keys(adminTopicMap)
-        .sort()
-        .map(t => `<option value="${t}">`)
-        .join("");
-
-    }
-
-    populateAdminSubtopicOptions();
-
-  } catch (err) {
-
-    console.error("Topic loader error", err);
-
-  }
-
-}
-
-
-function populateAdminSubtopicOptions() {
-
-  const topic = (document.getElementById("topic").value || "").trim();
-  const subList = document.getElementById("subtopicOptions");
-
-  if (!subList) return;
-
-  const subs = topic && adminTopicMap[topic]
-    ? Array.from(adminTopicMap[topic])
-    : [];
-
-  subList.innerHTML = subs
-    .sort()
-    .map(s => `<option value="${s}">`)
-    .join("");
-
-}
     <div id="formatHint" style="background:#f5f7fb;border-left:6px solid #FFD100;padding:12px;margin-bottom:18px;"></div>
 
     <div id="answerBuilder"></div>
