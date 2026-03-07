@@ -3412,17 +3412,20 @@ function fillGeneratedAnswers(data) {
       </select>
     </div>
 
-    <div style="margin-bottom:14px;">
-      <label style="font-weight:700;">Topic</label>
-      <input id="topic" placeholder="Topic"
-        style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;">
-    </div>
+<div style="margin-bottom:14px;">
+  <label style="font-weight:700;">Topic</label>
+  <input id="topic" list="topicOptions" placeholder="Topic"
+    oninput="populateAdminSubtopicOptions()"
+    style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;">
+  <datalist id="topicOptions"></datalist>
+</div>
 
-    <div style="margin-bottom:18px;">
-      <label style="font-weight:700;">Subtopic</label>
-      <input id="subtopic" placeholder="Subtopic"
-        style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;">
-    </div>
+<div style="margin-bottom:18px;">
+  <label style="font-weight:700;">Subtopic</label>
+  <input id="subtopic" list="subtopicOptions" placeholder="Subtopic"
+    style="width:100%;padding:12px;border:2px solid #002E5D;border-radius:10px;">
+  <datalist id="subtopicOptions"></datalist>
+</div>
 
     <div id="formatHint" style="background:#f5f7fb;border-left:6px solid #FFD100;padding:12px;margin-bottom:18px;"></div>
 
